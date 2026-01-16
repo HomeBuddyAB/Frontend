@@ -1,0 +1,221 @@
+@import "tailwindcss";
+
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}
+
+.glitch-text {
+  animation: glitch 1.5s infinite alternate steps(2, end);
+  filter: drop-shadow(2px 2px 0 #362222) drop-shadow(-2px -2px 0 #423F3E);
+}
+
+.scan-line {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.1) 0,
+    rgba(0, 0, 0, 0.1) 1px,
+    transparent 2px,
+    transparent 3px
+  );
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+@tailwind utilities;
+
+@layer utilities {
+  @keyframes loading-bar {
+    0% {
+      transform: translateX(-100%);
+    }
+    50% {
+      transform: translateX(0%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-loading-bar {
+    animation: loading-bar 1.5s ease-in-out infinite;
+  }
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+.marginTopNav {
+  margin-top: 5vh;
+}
+
+@media (min-width: 768px) {
+  .marginTopNav {
+    margin-top: 12vh;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.spinner {
+  /* ... */
+  opacity: 0;
+  animation:
+    fadeIn 500ms 100ms forwards,
+    rotate 1s linear infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Toastify (custom HomeBuddy theme) --- */
+.Toastify__toast-container {
+  z-index: 9999;
+  padding: 0.25rem;
+}
+
+.Toastify__toast {
+  background: #2a2a2a !important;
+  color: #ffffff !important;
+  border: 1px solid #3a3a3a;
+  border-left: 4px solid #5a4a4a;
+  /* default accent */
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.4);
+  backdrop-filter: saturate(1.2);
+}
+
+.Toastify__toast-body {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.Toastify__close-button {
+  color: #cfcfcf;
+  opacity: 0.8;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1;
+}
+
+/* Type accents */
+.Toastify__toast--success {
+  border-left-color: #34d399;
+  /* emerald-400 */
+}
+
+.Toastify__toast--error {
+  border-left-color: #f87171;
+  /* red-400 */
+}
+
+.Toastify__toast--warning {
+  border-left-color: #fbbf24;
+  /* amber-400 */
+}
+
+.Toastify__toast--info {
+  border-left-color: #60a5fa;
+  /* blue-400 */
+}
+
+/* Progress bar colors */
+.Toastify__progress-bar {
+  background: #5a4a4a;
+  /* brand accent */
+}
+
+.Toastify__progress-bar--success {
+  background: #34d399;
+}
+
+.Toastify__progress-bar--error {
+  background: #f87171;
+}
+
+.Toastify__progress-bar--warning {
+  background: #fbbf24;
+}
+
+.Toastify__progress-bar--info {
+  background: #60a5fa;
+}
+
+/* Position nudge for top-left to align with site spacing */
+.Toastify__toast-container--top-left {
+  left: 1rem;
+  top: 1rem;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #423F3E;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8B4513;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #423F3E transparent;
+}
+
+/* Ensure smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
