@@ -1,36 +1,130 @@
 @import "tailwindcss";
 
-@keyframes glitch {
-  0% { transform: translate(0); }
-  20% { transform: translate(-2px, 2px); }
-  40% { transform: translate(-2px, -2px); }
-  60% { transform: translate(2px, 2px); }
-  80% { transform: translate(2px, -2px); }
-  100% { transform: translate(0); }
+/* ============================================
+   HomeBuddy Global Styles - Bright & Friendly
+   ============================================ */
+
+:root {
+  /* PRIMARY COLORS */
+  --hb-primary-orange: #f4a261;
+  --hb-primary-dark: #e76f51;
+  --hb-primary-light: #f7c59f;
+
+  /* BACKGROUNDS */
+  --hb-cream: #faf3e0;
+  --hb-cream-dark: #f5ecd4;
+  --hb-white: #ffffff;
+  --hb-off-white: #fff9f0;
+
+  /* TEXT */
+  --hb-text-primary: #2d3e50;
+  --hb-text-secondary: #5a6c7d;
+  --hb-text-light: #8b9cae;
+
+  /* ACCENTS */
+  --hb-green: #6a994e;
+  --hb-blue: #4a90e2;
+  --hb-yellow: #ffd166;
+  --hb-red: #e63946;
+
+  /* BORDERS & SHADOWS */
+  --hb-border: #e8dcc4;
+  --hb-border-strong: #d4c4a8;
+  --hb-shadow-sm: rgba(45, 62, 80, 0.08);
+  --hb-shadow-md: rgba(45, 62, 80, 0.12);
+  --hb-shadow-lg: rgba(45, 62, 80, 0.16);
+
+  /* Legacy variables for backward compatibility */
+  --background: #faf3e0;
+  --foreground: #2d3e50;
 }
 
-.glitch-text {
-  animation: glitch 1.5s infinite alternate steps(2, end);
-  filter: drop-shadow(2px 2px 0 #362222) drop-shadow(-2px -2px 0 #423F3E);
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
-.scan-line {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.1) 0,
-    rgba(0, 0, 0, 0.1) 1px,
-    transparent 2px,
-    transparent 3px
-  );
-  pointer-events: none;
-  opacity: 0.3;
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+body {
+  background: var(--hb-cream);
+  color: var(--hb-text-primary);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue",
+    Arial, sans-serif;
+  line-height: 1.6;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+.marginTopNav {
+  margin-top: 5vh;
+}
+
+@media (min-width: 768px) {
+  .marginTopNav {
+    margin-top: 10vh;
+  }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Spinner for loading states */
+.spinner {
+  opacity: 0;
+  animation:
+    fadeIn 500ms 100ms forwards,
+    rotate 1s linear infinite;
+  border-color: var(--hb-primary-orange);
+  border-top-color: transparent;
+}
+
+/* ============================================
+   UTILITY ANIMATIONS
+   ============================================ */
 
 @tailwind utilities;
 
@@ -50,172 +144,178 @@
   .animate-loading-bar {
     animation: loading-bar 1.5s ease-in-out infinite;
   }
-}
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out;
+  }
 
-.marginTopNav {
-  margin-top: 5vh;
-}
-
-@media (min-width: 768px) {
-  .marginTopNav {
-    margin-top: 12vh;
+  .animate-pulse-slow {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ============================================
+   TOASTIFY CUSTOMIZATION - HomeBuddy Theme
+   ============================================ */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-.spinner {
-  /* ... */
-  opacity: 0;
-  animation:
-    fadeIn 500ms 100ms forwards,
-    rotate 1s linear infinite;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes rotate {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* --- Toastify (custom HomeBuddy theme) --- */
 .Toastify__toast-container {
   z-index: 9999;
-  padding: 0.25rem;
+  padding: 0.5rem;
 }
 
 .Toastify__toast {
-  background: #2a2a2a !important;
-  color: #ffffff !important;
-  border: 1px solid #3a3a3a;
-  border-left: 4px solid #5a4a4a;
-  /* default accent */
-  border-radius: 0.75rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.4);
-  backdrop-filter: saturate(1.2);
+  background: var(--hb-white) !important;
+  color: var(--hb-text-primary) !important;
+  border: 2px solid var(--hb-border-strong);
+  border-left: 4px solid var(--hb-primary-orange);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px var(--hb-shadow-md);
+  font-family: inherit;
 }
 
 .Toastify__toast-body {
   font-size: 0.95rem;
-  line-height: 1.4;
+  line-height: 1.5;
+  padding: 8px;
 }
 
 .Toastify__close-button {
-  color: #cfcfcf;
+  color: var(--hb-text-secondary);
   opacity: 0.8;
 }
 
 .Toastify__close-button:hover {
   opacity: 1;
+  color: var(--hb-text-primary);
 }
 
-/* Type accents */
+/* Toast type-specific styles */
 .Toastify__toast--success {
-  border-left-color: #34d399;
-  /* emerald-400 */
+  border-left-color: var(--hb-green);
 }
 
 .Toastify__toast--error {
-  border-left-color: #f87171;
-  /* red-400 */
+  border-left-color: var(--hb-red);
 }
 
 .Toastify__toast--warning {
-  border-left-color: #fbbf24;
-  /* amber-400 */
+  border-left-color: var(--hb-yellow);
 }
 
 .Toastify__toast--info {
-  border-left-color: #60a5fa;
-  /* blue-400 */
+  border-left-color: var(--hb-blue);
 }
 
-/* Progress bar colors */
+/* Progress bars */
 .Toastify__progress-bar {
-  background: #5a4a4a;
-  /* brand accent */
+  background: var(--hb-primary-orange);
 }
 
 .Toastify__progress-bar--success {
-  background: #34d399;
+  background: var(--hb-green);
 }
 
 .Toastify__progress-bar--error {
-  background: #f87171;
+  background: var(--hb-red);
 }
 
 .Toastify__progress-bar--warning {
-  background: #fbbf24;
+  background: var(--hb-yellow);
 }
 
 .Toastify__progress-bar--info {
-  background: #60a5fa;
+  background: var(--hb-blue);
 }
 
-/* Position nudge for top-left to align with site spacing */
 .Toastify__toast-container--top-left {
-  left: 1rem;
-  top: 1rem;
+  left: 1.5rem;
+  top: 1.5rem;
 }
+
+/* ============================================
+   SCROLLBAR CUSTOMIZATION
+   ============================================ */
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--hb-cream-dark);
+  border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #423F3E;
-  border-radius: 3px;
+  background: var(--hb-primary-orange);
+  border-radius: 5px;
+  border: 2px solid var(--hb-cream-dark);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #8B4513;
+  background: var(--hb-primary-dark);
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #423F3E transparent;
+  scrollbar-color: var(--hb-primary-orange) var(--hb-cream-dark);
 }
 
-/* Ensure smooth scrolling */
+/* ============================================
+   SMOOTH SCROLLING
+   ============================================ */
+
 html {
   scroll-behavior: smooth;
+}
+
+/* ============================================
+   FOCUS STYLES - Accessibility
+   ============================================ */
+
+*:focus-visible {
+  outline: 3px solid var(--hb-primary-orange);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============================================
+   SELECTION COLORS
+   ============================================ */
+
+::selection {
+  background: var(--hb-primary-light);
+  color: var(--hb-text-primary);
+}
+
+::-moz-selection {
+  background: var(--hb-primary-light);
+  color: var(--hb-text-primary);
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   DARK MODE SUPPORT (Optional)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Keep the bright theme even in dark mode preference */
+    /* HomeBuddy is intentionally bright and welcoming */
+  }
 }

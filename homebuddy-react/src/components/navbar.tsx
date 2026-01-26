@@ -15,9 +15,9 @@ const menuItems: StaggeredMenuItem[] = [
 
 // Define your social items
 const socialItems: StaggeredMenuSocialItem[] = [
-    { label: "Instagram", link: "https://instagram.com/your-account" },
-    { label: "Facebook", link: "https://facebook.com/your-account" },
-    { label: "Twitter", link: "https://twitter.com/your-account" },
+    { label: "Instagram", link: "https://instagram.com/homebuddy" },
+    { label: "Facebook", link: "https://facebook.com/homebuddy" },
+    { label: "Twitter", link: "https://twitter.com/homebuddy" },
 ];
 
 
@@ -84,9 +84,9 @@ export default function Navbar() {
     }, [menuOpen, handleMenuClose, handleMenuOpen]);
 
 
-    // Configuration for the Menu Button styles
-    const menuButtonColor = "#e9e9ef"; // White/light gray for closed state
-    const openMenuButtonColor = "#171010"; // Dark color when open to contrast the white panel
+    // Configuration for the Menu Button styles - UPDATED FOR HOMEBUDDY THEME
+    const menuButtonColor = "#2D3E50"; // Navy for closed state
+    const openMenuButtonColor = "#FFFFFF"; // White when open (to contrast cream panel)
 
     return (
         <>
@@ -110,7 +110,7 @@ export default function Navbar() {
 
                     {/* Cart and Login are now seamlessly integrated into the main header area */}
 
-                    {/* Menu Toggle Button */}
+                    {/* Menu Toggle Button - UPDATED COLORS */}
                     <button
                         className={`sm-toggle relative inline-flex items-center gap-[0.3rem] bg-transparent border-0 cursor-pointer font-medium leading-none overflow-visible transition-colors duration-300`}
                         aria-label={menuOpen ? 'Close menu' : 'Open menu'}
@@ -120,24 +120,28 @@ export default function Navbar() {
                         style={{ color: menuOpen ? openMenuButtonColor : menuButtonColor }}
                     >
                         {/* Text label that changes */}
-                        <span className="font-bold tracking-wider text-white">{menuOpen ? 'CLOSE' : 'MENU'}</span>
+                        <span className="font-bold tracking-wider" style={{ color: menuOpen ? openMenuButtonColor : menuButtonColor }}>
+                            {menuOpen ? 'CLOSE' : 'MENU'}
+                        </span>
 
                         {/* Animated Cross Icon (Simple CSS transition for the plus sign) */}
                         <span className="relative w-3.5 h-3.5 shrink-0 inline-flex items-center justify-center">
                             {/* Horizontal Line */}
                             <span
-                                className={`text-white absolute left-1/2 top-1/2 w-full h-0.5 bg-current rounded-xs -translate-x-1/2 -translate-y-1/2 transition-transform duration-500 ease-out ${menuOpen ? 'rotate-45' : 'rotate-0'}`}
+                                className={`absolute left-1/2 top-1/2 w-full h-0.5 bg-current rounded-xs -translate-x-1/2 -translate-y-1/2 transition-transform duration-500 ease-out ${menuOpen ? 'rotate-45' : 'rotate-0'}`}
+                                style={{ backgroundColor: menuOpen ? openMenuButtonColor : menuButtonColor }}
                             />
                             {/* Vertical Line */}
                             <span
-                                className={`text-white absolute left-1/2 top-1/2 w-full h-0.5 bg-current rounded-xs -translate-x-1/2 -translate-y-1/2 transition-transform duration-500 ease-out ${menuOpen ? '-rotate-45' : 'rotate-90'}`}
+                                className={`absolute left-1/2 top-1/2 w-full h-0.5 bg-current rounded-xs -translate-x-1/2 -translate-y-1/2 transition-transform duration-500 ease-out ${menuOpen ? '-rotate-45' : 'rotate-90'}`}
+                                style={{ backgroundColor: menuOpen ? openMenuButtonColor : menuButtonColor }}
                             />
                         </span>
                     </button>
                 </div>
             </header>
 
-            {/* The Controlled Menu Panel */}
+            {/* The Controlled Menu Panel - UPDATED COLORS FOR HOMEBUDDY */}
             <StaggeredMenu
                 isFixed={true}
                 items={menuItems}
@@ -145,8 +149,8 @@ export default function Navbar() {
                 displaySocials={true}
                 position="right"
                 logoUrl="/homebuddy-logo.svg"
-                accentColor="#8B4545"
-                colors={['#171010', '#423F3E', '#8B4545']}
+                accentColor="#F4A261" // Orange accent instead of dark red
+                colors={['#FFFFFF', '#FAF3E0', '#F4A261']} // White, Cream, Orange instead of dark colors
                 className="top-0 z-50 w-full h-screen"
 
                 // CONTROL PROPS

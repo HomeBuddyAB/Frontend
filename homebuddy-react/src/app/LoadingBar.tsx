@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import CircularText from "@/components/CircularText";
 
 export default function LoadingBar() {
     const [loading, setLoading] = useState(false);
@@ -41,16 +42,28 @@ export default function LoadingBar() {
 
     return (
         <>
-            {/* Top Loading Bar */}
-            <div className="fixed top-0 left-0 right-0 z-[100] h-1 bg-gradient-to-r from-transparent via-[#8B4545] to-transparent">
-                <div className="h-full w-full bg-[#8B4545] animate-loading-bar" />
+            {/* Top Loading Bar - HomeBuddy Orange */}
+            <div className="fixed top-0 left-0 right-0 z-100 h-1 bg-linear-to-r from-transparent via-[#F4A261] to-transparent">
+                <div className="h-full w-full bg-[#F4A261] animate-loading-bar" />
             </div>
 
-            {/* Optional: Full screen overlay with spinner */}
-            <div className="fixed inset-0 z-99 bg-black/20 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 border-4 border-[#8B4545] border-t-transparent rounded-full animate-spin" />
-                    <p className="text-white text-sm font-medium">Loading...</p>
+            {/* Full screen overlay with CircularText spinner */}
+            <div className="fixed inset-0 z-99 flex items-center justify-center pointer-events-none" style={{ backgroundColor: "rgba(250, 243, 224, 0.8)", backdropFilter: "blur(4px)" }}>
+                <div className="flex flex-col items-center gap-4 pointer-events-auto">
+                    {/* Circular spinning text */}
+                    <CircularText 
+                        text="HOMEBUDDY • LOADING • "
+                        spinDuration={6}
+                        onHover="goBonkers"
+                        className="text-[#F4A261]"
+                    />
+                    
+                    {/* Center house icon */}
+                    <div className="absolute">
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg" style={{ backgroundColor: "#FFFFFF" }}>
+                            <span className="text-3xl">🏠</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </>

@@ -154,7 +154,7 @@ const CurvedLoop: FC<CurvedLoopProps> = ({
       style={{ cursor: interactive ? (dragRef.current ? 'grabbing' : 'grab') : 'auto' }}
     >
       <svg
-        className="w-full block h-[160px] overflow-visible" // Fixed height prevents layout jumps
+        className="w-full block h-40 overflow-visible" // Fixed height prevents layout jumps
         viewBox="0 0 1440 160"
         preserveAspectRatio="xMidYMid slice"
       >

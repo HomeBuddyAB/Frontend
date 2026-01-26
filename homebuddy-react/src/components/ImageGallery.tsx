@@ -79,7 +79,7 @@ export default function ImageGallery({ images, productName }: ImageGalleryProps)
             <button
               key={`${img.url}-${index}`}
               onClick={() => setSelectedImage(img.url)}
-              className={`relative w-20 h-20 flex-shrink-0 rounded-lg border-2 overflow-hidden transition-all ${selectedImage === img.url
+              className={`relative w-20 h-20 shrink-0 rounded-lg border-2 overflow-hidden transition-all ${selectedImage === img.url
                 ? 'border-white ring-2 ring-white/50'
                 : 'border-gray-600 hover:border-gray-400'
                 }`}
