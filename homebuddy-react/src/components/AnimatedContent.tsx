@@ -49,7 +49,7 @@ const AnimatedContent: React.FC<AnimatedContentProps> = ({
       opacity: animateOpacity ? initialOpacity : 1
     });
 
-    gsap.to(el, {
+    const tween = gsap.to(el, {
       [axis]: 0,
       scale: 1,
       opacity: 1,
@@ -66,7 +66,9 @@ const AnimatedContent: React.FC<AnimatedContentProps> = ({
     });
 
     return () => {
-      ScrollTrigger.getAll().forEach(t => t.kill());
+      if (tween.scrollTrigger) {
+        tween.scrollTrigger.kill();
+      }
       gsap.killTweensOf(el);
     };
   }, [

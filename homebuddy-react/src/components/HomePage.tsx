@@ -50,7 +50,7 @@ export default function HomePage() {
     }
   ];
 
-  const [featuredProducts, setFeaturedProducts] = useState<Array<{ link: string, name: string; price: string; image: string }>>(demoItems);
+  const [featuredProducts, setFeaturedProducts] = useState<Array<{ id: string; link: string, name: string; price: string; image: string }>>(demoItems.map((item, idx) => ({ id: `demo-${idx}`, ...item })));
 
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
@@ -62,6 +62,7 @@ export default function HomePage() {
               const categorySlug = item.mainCategory ? item.mainCategory.toLowerCase() : 'shop';
               const fullLink = `/shop/${categorySlug}/${item.slug}?sku=${item.sku}`;
               return {
+                id: item.sku || item.id || Math.random().toString(),
                 name: item.groupName,
                 price: `$${item.price.toFixed(2)}`,
                 image: item.primaryImageUrl || "https://picsum.photos/600/400?random=1",
@@ -170,7 +171,7 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {featuredProducts.map((item, index) => (
-              <AnimatedContent key={index} delay={index * 0.1} distance={30}>
+              <AnimatedContent key={item.id} delay={index * 0.1} distance={30}>
                 <Link href={item.link} className="group block">
                   <div className="bg-white rounded-xl overflow-hidden border-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2" style={{ borderColor: "#E8DCC4" }}>
                     <div className="relative aspect-square overflow-hidden" style={{ backgroundColor: "#F5ECD4" }}>
