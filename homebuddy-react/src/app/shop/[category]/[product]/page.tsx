@@ -41,8 +41,6 @@ export default async function ProductPage({ params, searchParams }: Props) {
   }
 
   // Mapping function
-  // Fixed mapping function - add this to your ProductPage component
-
   function mapGroupDetailToVariantSelector(groupDetail: GroupDetail) {
     return {
       name: groupDetail.name,
@@ -70,8 +68,8 @@ export default async function ProductPage({ params, searchParams }: Props) {
 
   return (
     <div
-      className="min-h-screen text-white pb-24" // Added pb-24
-      style={{ backgroundColor: "#171010" }}
+      className="min-h-screen pb-24"
+      style={{ backgroundColor: "#FAF3E0" }}
     >
       <ProductAnalytics
         product={{
@@ -82,8 +80,8 @@ export default async function ProductPage({ params, searchParams }: Props) {
         }}
       />
 
-      {/* Matches Landing Page Header Spacing */}
-      <div className="pt-32 pb-8 px-6 md:px-12 border-b border-[#362222]">
+      {/* Prettier, Narrower Header with Breadcrumbs */}
+      <div className="pt-28 pb-6 px-6 md:px-12 border-b-2" style={{ borderColor: "#E8DCC4" }}>
         <div className="container mx-auto">
           <Breadcrumbs
             items={[
@@ -97,29 +95,45 @@ export default async function ProductPage({ params, searchParams }: Props) {
       </div>
 
       <div className="container mx-auto px-6 md:px-12 py-12">
-        <div className="mt-8">
+        {/* Product Details Section */}
+        <div className="mt-8 bg-white rounded-2xl p-8 border-2 shadow-lg" style={{ borderColor: "#E8DCC4" }}>
           <VariantSelector
             group={mapGroupDetailToVariantSelector(group)}
             initialSku={sku}
           />
         </div>
 
-        <div className="mt-8 border-t border-[#362222] pt-8">
+        {/* Create Review Section */}
+        <div className="mt-12 bg-white rounded-2xl p-8 border-2" style={{ borderColor: "#E8DCC4" }}>
+          <div className="mb-6">
+            <h2 className="text-3xl font-black mb-2" style={{ color: "#2D3E50" }}>
+              Share Your Experience
+            </h2>
+            <p className="text-lg" style={{ color: "#5A6C7D" }}>
+              Help other homeowners by leaving a review
+            </p>
+          </div>
           <CreateReviewSection groupSlug={group.groupSlug} />
         </div>
 
-        <div className="mt-8">
+        {/* Product Reviews Section */}
+        <div className="mt-12 bg-white rounded-2xl p-8 border-2" style={{ borderColor: "#E8DCC4" }}>
+          <div className="mb-6">
+            <h2 className="text-3xl font-black mb-2" style={{ color: "#2D3E50" }}>
+              Customer Reviews
+            </h2>
+            <p className="text-lg" style={{ color: "#5A6C7D" }}>
+              See what other customers are saying
+            </p>
+          </div>
           <ProductReviews groupSlug={group.groupSlug} />
         </div>
 
-        <div className="ai-popup ">
+        {/* AI Assistant Popup */}
+        <div className="ai-popup">
           <OpenAiPopup groupSlug={group.groupSlug} />
         </div>
       </div>
     </div>
   );
 }
-
-
-// Inside ProductPage.tsx ...
-

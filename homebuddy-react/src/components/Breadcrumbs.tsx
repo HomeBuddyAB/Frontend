@@ -1,27 +1,52 @@
 // components/Breadcrumbs.tsx
-'use client';
+"use client";
 
-import Link from 'next/link';
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 
-type Crumb = { label: string; href?: string };
+type BreadcrumbItem = {
+  label: string;
+  href?: string;
+};
 
-export default function Breadcrumbs({ items }: { items: Crumb[] }) {
+type BreadcrumbsProps = {
+  items: BreadcrumbItem[];
+};
+
+export default function Breadcrumbs({ items }: BreadcrumbsProps) {
   return (
-    <nav aria-label="Breadcrumb" className="text-sm text-gray-400 mb-6">
-      <ol className="flex flex-wrap items-center gap-1">
-        {items.map((it, i) => (
-          <li key={i} className="flex items-center">
-            {it.href ? (
-              <Link href={it.href} className="hover:text-white underline-offset-4 hover:underline transition-colors">
-                {it.label}
+    <nav aria-label="Breadcrumb" className="flex items-center gap-2 flex-wrap">
+      {items.map((item, index) => {
+        const isLast = index === items.length - 1;
+
+        return (
+          <div key={index} className="flex items-center gap-2">
+            {item.href && !isLast ? (
+              <Link
+                href={item.href}
+                className="text-base font-semibold uppercase tracking-wide transition-colors duration-200 hover:text-[#F4A261]"
+                style={{ color: "#5A6C7D" }}
+              >
+                {item.label}
               </Link>
             ) : (
-              <span aria-current="page" className="text-white font-medium">{it.label}</span>
+              <span
+                className="text-base font-bold uppercase tracking-wide"
+                style={{ color: "#2D3E50" }}
+              >
+                {item.label}
+              </span>
             )}
-            {i < items.length - 1 && <span className="mx-2 text-gray-500">/</span>}
-          </li>
-        ))}
-      </ol>
+
+            {!isLast && (
+              <ChevronRight 
+                className="w-4 h-4 shrink-0" 
+                style={{ color: "#8B9CAE" }}
+              />
+            )}
+          </div>
+        );
+      })}
     </nav>
   );
 }

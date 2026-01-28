@@ -96,12 +96,12 @@ export default function Navbar() {
                 {/* 1. Logo/Branding on the left */}
                 <Link className="flex items-center select-none pointer-events-auto hover:scale-101" href="/">
                     <img
-                        src="/homebuddy-logo.svg"
+                        src="/homebuddy-logo.png"
                         alt="Logo"
-                        className={`block h-8 w-auto object-contain transition-filter duration-300`}
+                        className={`block h-24 w-auto object-contain transition-filter duration-300`}
                         draggable={false}
-                        width={110}
-                        height={24}
+                        width={330}
+                        height={72}
                     />
                 </Link>
 
@@ -148,7 +148,7 @@ export default function Navbar() {
                 socialItems={socialItems}
                 displaySocials={true}
                 position="right"
-                logoUrl="/homebuddy-logo.svg"
+                logoUrl="/homebuddy-logo.png"
                 accentColor="#F4A261" // Orange accent instead of dark red
                 colors={['#FFFFFF', '#FAF3E0', '#F4A261']} // White, Cream, Orange instead of dark colors
                 className="top-0 z-50 w-full h-screen"

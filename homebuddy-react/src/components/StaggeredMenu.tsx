@@ -43,7 +43,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
   displaySocials = true,
   displayItemNumbering = true,
   className,
-  logoUrl = "/homebuddy-logo.svg",
+  logoUrl = "/homebuddy-logo.png",
   menuButtonColor = "#fff",
   openMenuButtonColor = "#fff",
   changeMenuColorOnOpen = true,
@@ -462,7 +462,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
 /* CSS remains largely the same, but header/toggle styles are now less relevant for this file */
 .sm-scope .staggered-menu-header { display: none; } /* Hide the original header if it were still here */
 .sm-scope .sm-logo { display: flex; align-items: center; user-select: none; }
-.sm-scope .sm-logo-img { display: block; height: 32px; width: auto; object-fit: contain; }
+.sm-scope .sm-logo-img { display: block; height: 96px; width: auto; object-fit: contain; max-width: 100%; }
 .sm-scope .staggered-menu-panel { position: absolute; top: 0; right: 0; width: clamp(260px, 38vw, 420px); height: 100%; background: white; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: flex; flex-direction: column; padding: 6em 2em 2em 2em; overflow-y: auto; z-index: 10; }
 .sm-scope [data-position='left'] .staggered-menu-panel { right: auto; left: 0; }
 .sm-scope .sm-prelayers { position: absolute; top: 0; right: 0; bottom: 0; width: clamp(260px, 38vw, 420px); pointer-events: none; z-index: 5; }
@@ -486,8 +486,8 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
 .sm-scope .sm-panel-item:hover { color: var(--sm-accent, #ff0000); }
 .sm-scope .sm-panel-list[data-numbering] { counter-reset: smItem; }
 .sm-scope .sm-panel-list[data-numbering] .sm-panel-item::after { counter-increment: smItem; content: counter(smItem, decimal-leading-zero); position: absolute; top: 0.1em; right: 3.2em; font-size: 18px; font-weight: 400; color: var(--sm-accent, #ff0000); letter-spacing: 0; pointer-events: none; user-select: none; opacity: var(--sm-num-opacity, 0); }
-@media (max-width: 1024px) { .sm-scope .staggered-menu-panel { width: 100% !important; left: 0; right: 0; } }
-@media (max-width: 640px) { .sm-scope .staggered-menu-panel { width: 100% !important; left: 0; right: 0; } }
+@media (max-width: 1024px) { .sm-scope .staggered-menu-panel { width: 100% !important; left: 0; right: 0; } .sm-scope .sm-logo-img { height: 72px; } }
+@media (max-width: 640px) { .sm-scope .staggered-menu-panel { width: 100% !important; left: 0; right: 0; } .sm-scope .sm-logo-img { height: 60px; } }
 
 .sm-scope .staggered-menu-panel { 
   position: absolute; 
