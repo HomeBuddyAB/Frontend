@@ -143,10 +143,18 @@ export const userService = {
     },
 
     // Checkout all items in cart
-
-    async checkoutCart(email: string, items: Array<{ sku: string; quantity: number }>): Promise<ApiResponse<Order>> {
+    // countryCode: ISO 3166-1 alpha-2 (e.g. DE, FR) - required for VAT calculation
+    async checkoutCart(
+        email: string,
+        items: Array<{ sku: string; quantity: number }>,
+        countryCode: string
+    ): Promise<ApiResponse<Order>> {
         try {
-            return await apiClient.post<Order>('/api/Orders', { email, items });
+            return await apiClient.post<Order>('/api/Orders', {
+                email,
+                countryCode: countryCode.trim().toUpperCase(),
+                items,
+            });
         } catch (error: any) {
             return { error: error.message || 'Failed to checkout cart', status: 500 };
         }
