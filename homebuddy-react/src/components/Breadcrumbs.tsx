@@ -24,14 +24,14 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
             {item.href && !isLast ? (
               <Link
                 href={item.href}
-                className="text-base font-semibold uppercase tracking-wide transition-colors duration-200 hover:text-[#F4A261]"
+                className="text-base font-semibold tracking-wide transition-colors duration-200 hover:text-[#F4A261]"
                 style={{ color: "#5A6C7D" }}
               >
                 {item.label}
               </Link>
             ) : (
               <span
-                className="text-base font-bold uppercase tracking-wide"
+                className="text-base font-bold tracking-wide"
                 style={{ color: "#2D3E50" }}
               >
                 {item.label}

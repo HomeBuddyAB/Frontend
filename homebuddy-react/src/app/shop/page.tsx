@@ -172,7 +172,7 @@ export default function ShopLanding() {
                 <Link
                   key={c.id}
                   href={`/shop/${encodeURIComponent(c.slug)}`}
-                  className="px-6 py-3 rounded-full border-2 text-sm font-bold tracking-wide uppercase transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                  className="px-6 py-3 rounded-full border-2 text-sm font-bold tracking-wide transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
                   style={{ 
                     borderColor: '#E8DCC4', 
                     color: '#2D3E50',
@@ -300,7 +300,7 @@ export default function ShopLanding() {
                             {item.groupName}
                           </h3>
                           <div className="flex items-center gap-2 text-xs mb-3" style={{ color: '#8B9CAE' }}>
-                            <span className="uppercase font-medium">{item.mainCategory}</span>
+                            <span className="font-medium">{item.mainCategory}</span>
                             {item.moreVariantsCount > 0 && (
                               <>
                                 <span>•</span>

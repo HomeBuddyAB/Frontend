@@ -21,30 +21,30 @@ export default function HomePage() {
 
   const categories = [
     {
-      title: "POWER TOOLS",
-      description: "Professional-grade tools for every project",
-      href: "/shop/power-tools",
+      title: "Furniture",
+      description: "Furnish and shape your living space",
+      href: "/shop/furniture",
       icon: <Hammer className="w-8 h-8" />,
       accentColor: "#F4A261",
     },
     {
-      title: "HAND TOOLS",
-      description: "Quality essentials for precise work",
-      href: "/shop/hand-tools",
+      title: "Materials",
+      description: "Flooring, paint, and building supplies",
+      href: "/shop/materials",
       icon: <Wrench className="w-8 h-8" />,
       accentColor: "#E76F51",
     },
     {
-      title: "PAINT & SUPPLIES",
-      description: "Everything you need for a fresh look",
-      href: "/shop/paint",
+      title: "Power Tools",
+      description: "Professional-grade tools for every project",
+      href: "/shop/power-tools",
       icon: <PaintBucket className="w-8 h-8" />,
       accentColor: "#6A994E",
     },
     {
-      title: "ELECTRICAL",
+      title: "Lighting",
       description: "Lighting and electrical essentials",
-      href: "/shop/electrical",
+      href: "/shop/lighting",
       icon: <Lightbulb className="w-8 h-8" />,
       accentColor: "#FFD166",
     }

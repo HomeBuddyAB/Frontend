@@ -14,8 +14,9 @@ type Props = {
 
 export async function generateMetadata(props: Props) {
   const params = await props.params;
-  const title = `${decodeURIComponent(params.category).toUpperCase()} • Shop`;
-  return { title };
+  const slug = decodeURIComponent(params.category);
+  const titleCase = slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  return { title: `${titleCase} • Shop` };
 }
 
 export default async function CategoryPage(props: Props) {
@@ -58,11 +59,10 @@ export default async function CategoryPage(props: Props) {
           <div className="mb-4">
             <Breadcrumbs
               items={[
-                { label: "HOME", href: "/" },
-                { label: "SHOP", href: "/shop" },
+                { label: "Home", href: "/" },
+                { label: "Shop", href: "/shop" },
                 {
-                  label:
-                    category?.name?.toUpperCase() || categorySlug.toUpperCase(),
+                  label: category?.name || categorySlug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '),
                 },
               ]}
             />
@@ -73,8 +73,8 @@ export default async function CategoryPage(props: Props) {
               <div className="inline-block px-4 py-2 rounded-full mb-4" style={{ backgroundColor: "#FFD166", color: "#2D3E50" }}>
                 <span className="text-sm font-bold">🛠️ Category</span>
               </div>
-              <h1 className="text-5xl md:text-7xl font-black tracking-tight uppercase leading-[0.85]" style={{ color: "#2D3E50" }}>
-                {category?.name || categorySlug}
+              <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-[0.85]" style={{ color: "#2D3E50" }}>
+                {category?.name || categorySlug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}
               </h1>
             </div>
             <div className="text-sm font-bold tracking-wide uppercase px-4 py-2 rounded-lg" style={{ backgroundColor: "#FFFFFF", color: "#5A6C7D", border: "2px solid #E8DCC4" }}>
