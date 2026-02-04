@@ -3,6 +3,7 @@
 import StaggeredMenu, { StaggeredMenuItem, StaggeredMenuSocialItem } from "./StaggeredMenu";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 
 // Define your menu items
@@ -22,9 +23,21 @@ const socialItems: StaggeredMenuSocialItem[] = [
 
 
 export default function Navbar() {
-    // State to control the menu panel
+    const router = useRouter();
     const [menuOpen, setMenuOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
     const overlayHandlerRef = useRef<(() => void) | null>(null);
+
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const q = searchQuery.trim();
+        if (q) {
+            router.push(`/shop?search=${encodeURIComponent(q)}`);
+            setSearchQuery("");
+        } else {
+            router.push("/shop");
+        }
+    };
 
     // Define a function to toggle the blur overlay in your layout
     const toggleBlurOverlay = (open: boolean) => {
@@ -105,10 +118,20 @@ export default function Navbar() {
                     />
                 </Link>
 
-                {/* 2. Action Buttons and Menu Toggle on the right */}
-                <div className="flex items-center gap-4 pointer-events-auto">
-
-                    {/* Cart and Login are now seamlessly integrated into the main header area */}
+                {/* 2. Search + Menu Toggle on the right */}
+                <div className="flex items-center gap-3 sm:gap-4 pointer-events-auto">
+                    {/* Search bar - navigates to /shop?search=... */}
+                    <form onSubmit={handleSearchSubmit} className="hidden sm:block flex-1 max-w-[200px] lg:max-w-[240px]">
+                        <input
+                            type="search"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search products..."
+                            className="w-full px-3 py-2 rounded-lg border-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F4A261]"
+                            style={{ borderColor: "#E8DCC4", color: "#2D3E50", backgroundColor: "#FFFFFF" }}
+                            aria-label="Search products"
+                        />
+                    </form>
 
                     {/* Menu Toggle Button - UPDATED COLORS */}
                     <button

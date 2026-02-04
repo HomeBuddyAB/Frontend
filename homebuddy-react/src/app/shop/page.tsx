@@ -4,17 +4,39 @@ import { fetchCategories } from '@/lib/api-client';
 import { Item, itemService } from '@/lib/services/adminServices';
 import type { Category } from '@/lib/shop-types';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+
+function filterItemsBySearch(items: Item[], query: string): Item[] {
+  if (!query.trim()) return items;
+  const q = query.trim().toLowerCase();
+  return items.filter(
+    (item) =>
+      item.groupName?.toLowerCase().includes(q) ||
+      item.mainCategory?.toLowerCase().includes(q) ||
+      (item.slug && item.slug.toLowerCase().includes(q)) ||
+      (item.sku && item.sku.toLowerCase().includes(q)) ||
+      (item.color && item.color.toLowerCase().includes(q))
+  );
+}
 
 export default function ShopLanding() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get('search') ?? '';
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [allItems, setAllItems] = useState<Item[]>([]);
   const [displayedItems, setDisplayedItems] = useState<Item[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchInput, setSearchInput] = useState(urlSearch);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const itemsPerPage = 12;
+
+  const filteredItems = useMemo(() => filterItemsBySearch(allItems, urlSearch), [allItems, urlSearch]);
 
   const fetchAllItems = async (): Promise<Item[]> => {
     try {
@@ -64,12 +86,33 @@ export default function ShopLanding() {
   }, []);
 
   useEffect(() => {
+    setSearchInput(urlSearch);
+  }, [urlSearch]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [urlSearch]);
+
+  useEffect(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    setDisplayedItems(allItems.slice(startIndex, endIndex));
-  }, [currentPage, allItems]);
+    setDisplayedItems(filteredItems.slice(startIndex, endIndex));
+  }, [currentPage, filteredItems]);
 
-  const totalPages = Math.ceil(allItems.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchInput.trim();
+    const params = new URLSearchParams(searchParams.toString());
+    if (q) {
+      params.set('search', q);
+    } else {
+      params.delete('search');
+    }
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -153,13 +196,50 @@ export default function ShopLanding() {
         {/* Product Grid - Clean & Modern */}
         {allItems.length > 0 && (
           <section>
-            <div className="flex justify-between items-center mb-8 pb-4 border-b-2" style={{ borderColor: '#E8DCC4' }}>
-              <h2 className="text-2xl font-bold" style={{ color: '#2D3E50' }}>All Products</h2>
+            {/* Search bar */}
+            <form onSubmit={handleSearchSubmit} className="mb-8">
+              <div className="flex flex-col sm:flex-row gap-3 max-w-xl">
+                <input
+                  type="search"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search products by name, category, color..."
+                  className="flex-1 px-4 py-3 rounded-lg border-2 text-base focus:outline-none focus:ring-2 focus:ring-[#F4A261]"
+                  style={{ borderColor: '#E8DCC4', color: '#2D3E50', backgroundColor: '#FFFFFF' }}
+                  aria-label="Search products"
+                />
+                <button
+                  type="submit"
+                  className="px-6 py-3 rounded-lg font-bold text-sm tracking-wide uppercase whitespace-nowrap transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+                  style={{ backgroundColor: '#F4A261', color: '#FFFFFF' }}
+                >
+                  Search
+                </button>
+              </div>
+              {urlSearch && (
+                <p className="mt-2 text-sm" style={{ color: '#5A6C7D' }}>
+                  {filteredItems.length === 0
+                    ? `No products found for "${urlSearch}". Try a different search.`
+                    : `${filteredItems.length} result${filteredItems.length !== 1 ? 's' : ''} for "${urlSearch}"`}
+                </p>
+              )}
+            </form>
+
+            <div className="flex flex-wrap justify-between items-center gap-4 mb-8 pb-4 border-b-2" style={{ borderColor: '#E8DCC4' }}>
+              <h2 className="text-2xl font-bold" style={{ color: '#2D3E50' }}>
+                {urlSearch ? 'Search results' : 'All Products'}
+              </h2>
               <span className="text-sm font-medium" style={{ color: '#5A6C7D' }}>
-                Showing {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, allItems.length)} of {allItems.length}
+                Showing {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filteredItems.length)} of {filteredItems.length}
               </span>
             </div>
 
+            {filteredItems.length === 0 ? (
+              <div className="py-16 text-center rounded-xl border-2" style={{ borderColor: '#E8DCC4', backgroundColor: '#FFFFFF' }}>
+                <p className="text-lg font-medium mb-2" style={{ color: '#2D3E50' }}>No products match your search.</p>
+                <p className="text-sm" style={{ color: '#5A6C7D' }}>Try a different keyword or clear the search to see all products.</p>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
               {displayedItems.map((item) => {
                 const categorySlug = item.mainCategory.toLowerCase().replace(/\s+/g, '-');
@@ -241,6 +321,7 @@ export default function ShopLanding() {
                 );
               })}
             </div>
+            )}
 
             {/* Pagination - Friendly Style */}
             {totalPages > 1 && (
