@@ -26,6 +26,10 @@ interface CartContextType {
   removeItem: (sku: string) => void;
   updateQuantity: (sku: string, quantity: number) => void;
   clearCart: () => void;
+  /** Replace cart with merged cart from login/register. Keeps existing item details where possible; adds placeholders for new SKUs. */
+  replaceWithMergedCart: (mergedCartJson: string) => void;
+  /** Build guest cart JSON for login/register: { items: [{ sku, quantity }] } */
+  getGuestCartJson: () => string | null;
   totalItems: number;
   totalPrice: number;
 }
@@ -97,6 +101,47 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]);
   };
 
+  const getGuestCartJson = (): string | null => {
+    if (items.length === 0) return null;
+    const payload = {
+      items: items.map((i) => ({ sku: i.sku, quantity: i.quantity })),
+    };
+    return JSON.stringify(payload);
+  };
+
+  const replaceWithMergedCart = (mergedCartJson: string) => {
+    try {
+      const parsed = JSON.parse(mergedCartJson) as { items?: Array<{ sku?: string; quantity?: number }> };
+      const rawItems = parsed?.items ?? [];
+      if (rawItems.length === 0) {
+        setItems([]);
+        return;
+      }
+      const bySku = new Map(items.map((i) => [i.sku.toUpperCase(), i]));
+      const next: CartItem[] = rawItems
+        .filter((r) => r?.sku && (r.quantity ?? 0) > 0)
+        .map((r) => {
+          const sku = String(r.sku).trim();
+          const key = sku.toUpperCase();
+          const qty = Math.max(1, r.quantity ?? 1);
+          const existing = bySku.get(key);
+          if (existing) {
+            return { ...existing, quantity: qty };
+          }
+          return {
+            sku,
+            name: `Product ${sku}`,
+            price: 0,
+            quantity: qty,
+            groupSlug: "",
+          } as CartItem;
+        });
+      setItems(next);
+    } catch (e) {
+      console.error("Failed to apply merged cart:", e);
+    }
+  };
+
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -119,6 +164,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeItem,
         updateQuantity,
         clearCart,
+        replaceWithMergedCart,
+        getGuestCartJson,
         totalItems,
         totalPrice,
       }}

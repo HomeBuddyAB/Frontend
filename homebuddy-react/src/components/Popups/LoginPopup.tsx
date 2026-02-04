@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
 
 function LoginPopup({ onSignupClick }: { onSignupClick: () => void }) {
     const [showPassword, setShowPassword] = useState(false);
@@ -9,19 +10,22 @@ function LoginPopup({ onSignupClick }: { onSignupClick: () => void }) {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const { login } = useAuth();
+    const { getGuestCartJson, replaceWithMergedCart } = useCart();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
 
-        const result = await login(email, password);
+        const guestCart = getGuestCartJson();
+        const result = await login(email, password, guestCart ?? undefined);
 
         if (!result.success) {
             setError(result.error || 'Login failed');
+        } else if (result.cart) {
+            replaceWithMergedCart(result.cart);
         }
 
-        
         setIsLoading(false);
     };
 

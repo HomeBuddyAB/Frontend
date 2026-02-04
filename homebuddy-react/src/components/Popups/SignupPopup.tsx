@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
 
 export default function SignupPopup({ onLoginClick }: { onLoginClick?: () => void }) {
     const [email, setEmail] = useState("");
@@ -14,6 +15,7 @@ export default function SignupPopup({ onLoginClick }: { onLoginClick?: () => voi
     const [error, setError] = useState("");
     const [agreeToTerms, setAgreeToTerms] = useState(false);
     const { register } = useAuth();
+    const { getGuestCartJson, replaceWithMergedCart } = useCart();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,10 +33,13 @@ export default function SignupPopup({ onLoginClick }: { onLoginClick?: () => voi
 
         setIsLoading(true);
 
-        const result = await register(email, password);
+        const guestCart = getGuestCartJson();
+        const result = await register(email, password, guestCart ?? undefined);
 
         if (!result.success) {
             setError(result.error || 'Signup failed');
+        } else if (result.cart) {
+            replaceWithMergedCart(result.cart);
         }
 
         setIsLoading(false);

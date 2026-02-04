@@ -14,8 +14,8 @@ interface AuthContextType {
     isAdmin: boolean;
     showLoginPopup: boolean;
     setShowLoginPopup: (show: boolean) => void;
-    login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-    register: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+    login: (email: string, password: string, guestCart?: string) => Promise<{ success: boolean; error?: string; cart?: string }>;
+    register: (email: string, password: string, guestCart?: string) => Promise<{ success: boolean; error?: string; cart?: string }>;
     adminLogin: (userName: string, password: string) => Promise<{ success: boolean; error?: string }>;
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
@@ -49,9 +49,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         checkAuthStatus();
     }, [checkAuthStatus]);
 
-    const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    const login = async (email: string, password: string, guestCart?: string): Promise<{ success: boolean; error?: string; cart?: string }> => {
         try {
-            const response = await authService.login({ email, password });
+            const response = await authService.login({ email, password, guestCart });
 
             if (response.error || !response.data) {
                 return { success: false, error: response.error || 'Login failed' };
@@ -61,18 +61,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setShowLoginPopup(false);
             router.push('/profile');
 
-            // After successful login:
             analytics.login('email');
 
-            return { success: true };
+            return { success: true, cart: response.cart };
         } catch (error: any) {
             return { success: false, error: error.message || 'Login failed' };
         }
     };
 
-    const register = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    const register = async (email: string, password: string, guestCart?: string): Promise<{ success: boolean; error?: string; cart?: string }> => {
         try {
-            const response = await authService.register({ email, password, confirmPassword: password });
+            const response = await authService.register({ email, password, confirmPassword: password, guestCart });
 
             if (response.error || !response.data) {
                 return { success: false, error: response.error || 'Registration failed' };
@@ -82,12 +81,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setShowLoginPopup(false);
             router.push('/profile');
 
-            // After successful registration:
             analytics.signUp('email');
 
-            return { success: true };
+            return { success: true, cart: response.cart };
         } catch (error: any) {
-            return { success: false, error: error.message || 'Registration failed' };
+            return { success: false, error: (error as Error).message || 'Registration failed' };
         }
     };
 

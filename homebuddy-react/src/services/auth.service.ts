@@ -38,7 +38,7 @@ function extractUserFromToken(token: string): UserFromToken {
 
 export const authService = {
     // Regular user login
-    async login(dto: LoginDto): Promise<ApiResponse<UserFromToken>> {
+    async login(dto: LoginDto): Promise<ApiResponse<UserFromToken> & { cart?: string }> {
         try {
             const response = await apiClient.post<AuthResponseDto>('/api/auth/login', dto);
 
@@ -53,7 +53,7 @@ export const authService = {
                 if (typeof window !== 'undefined') {
                     localStorage.setItem('accessToken', response.data.token);
                 }
-                return { data: user, status: response.status };
+                return { data: user, status: response.status, cart: response.data?.cart };
             }
 
             return { error: 'No token received', status: response.status };
@@ -88,7 +88,7 @@ export const authService = {
     },
 
     // Register
-    async register(dto: RegisterDto): Promise<ApiResponse<UserFromToken>> {
+    async register(dto: RegisterDto): Promise<ApiResponse<UserFromToken> & { cart?: string }> {
         try {
             const response = await apiClient.post<AuthResponseDto>('/api/auth/register', dto);
 
@@ -101,7 +101,7 @@ export const authService = {
                 if (typeof window !== 'undefined') {
                     localStorage.setItem('accessToken', response.data.token);
                 }
-                return { data: user, status: response.status };
+                return { data: user, status: response.status, cart: response.data?.cart };
             }
 
             return { error: 'No token received', status: response.status };

@@ -22,6 +22,8 @@ export interface UserFromToken {
 export interface LoginDto {
     email: string;
     password: string;
+    /** JSON cart from guest session, e.g. {"items":[{"sku":"ABC-123","quantity":2}]}. Merged with user cart on login. */
+    guestCart?: string;
 }
 
 export interface AdminLoginDto {
@@ -33,15 +35,21 @@ export interface RegisterDto {
     email: string;
     password: string;
     confirmPassword: string;
+    /** JSON cart from guest session. Becomes user cart on registration. */
+    guestCart?: string;
 }
 
 export interface AuthResponseDto {
     email: string;
     token: string;
+    /** Merged cart JSON after login/register. Use to replace guest cart in frontend. */
+    cart?: string;
 }
 
 export interface ApiResponse<T> {
     data?: T;
     error?: string;
     status?: number;
+    /** Auth responses include merged cart for cart merge on login/register */
+    cart?: string;
 }
