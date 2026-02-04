@@ -307,7 +307,11 @@ export const variantService = {
 
 // =========== Items Service ==========
 export const itemService = {
-    getAll: (page: number = 1, pageSize: number = 30) => apiClient.get<Item[]>(`/api/products?page=${page}&pageSize=${pageSize}`),
+    getAll: (page: number = 1, pageSize: number = 30, search?: string) => {
+        const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+        if (search?.trim()) params.set('search', search.trim());
+        return apiClient.get<Item[]>(`/api/products?${params.toString()}`);
+    },
 };
 
 // ========== Categories Service ==========

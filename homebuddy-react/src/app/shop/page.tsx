@@ -38,7 +38,7 @@ export default function ShopLanding() {
 
   const filteredItems = useMemo(() => filterItemsBySearch(allItems, urlSearch), [allItems, urlSearch]);
 
-  const fetchAllItems = async (): Promise<Item[]> => {
+  const fetchAllItems = async (search?: string): Promise<Item[]> => {
     try {
       let pageNumber = 1;
       const pageSize = 30;
@@ -46,7 +46,7 @@ export default function ShopLanding() {
       let fetchedItems: Item[] = [];
 
       do {
-        const response = await itemService.getAll(pageNumber, pageSize);
+        const response = await itemService.getAll(pageNumber, pageSize, search);
         if (response.status !== 200 || !response.data) {
           throw new Error('Failed to fetch items');
         }
@@ -66,12 +66,13 @@ export default function ShopLanding() {
     const loadData = async () => {
       setIsLoading(true);
       try {
+        const searchTerm = urlSearch.trim() || undefined;
         const [categoriesData, itemsData] = await Promise.all([
           fetchCategories().catch(() => []),
-          fetchAllItems()
+          fetchAllItems(searchTerm)
         ]);
 
-        setCategories(categoriesData);
+        setCategories((prev) => (categoriesData.length > 0 ? categoriesData : prev));
         setAllItems(itemsData);
         setDisplayedItems(itemsData.slice(0, itemsPerPage));
       } catch (err) {
@@ -83,7 +84,7 @@ export default function ShopLanding() {
     };
 
     loadData();
-  }, []);
+  }, [urlSearch]);
 
   useEffect(() => {
     setSearchInput(urlSearch);
