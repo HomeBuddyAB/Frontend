@@ -42,6 +42,15 @@ export interface Item {
     moreVariantsCount: number;
 }
 
+/** Response from GET /api/products (paged) */
+export interface PagedProductResponse {
+    items: Item[];
+    totalCount: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+}
+
 export interface OrderItem {
     id: number;
     orderId: number;
@@ -309,8 +318,8 @@ export const variantService = {
 export const itemService = {
     getAll: (page: number = 1, pageSize: number = 30, search?: string) => {
         const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-        if (search?.trim()) params.set('search', search.trim());
-        return apiClient.get<Item[]>(`/api/products?${params.toString()}`);
+        if (search?.trim()) params.set('Search', search.trim());
+        return apiClient.get<PagedProductResponse>(`/api/products?${params.toString()}`);
     },
 };
 

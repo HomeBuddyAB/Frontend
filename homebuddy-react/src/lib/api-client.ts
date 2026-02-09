@@ -67,6 +67,24 @@ export type ProductListingParams = {
   pageSize?: string;
 };
 
+/** Paged products API response (backend ProductListPageResponse) */
+export type ProductListPageResponse = {
+  items: VariantListItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+/** Result from fetchCategoryListing for use in category page + pagination UI */
+export type CategoryListingResult = {
+  items: VariantListItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 /* =========================================================
    Existing Axios Client (kept intact)
    ========================================================= */
@@ -476,10 +494,10 @@ export async function fetchCategories(): Promise<Category[]> {
   return requestJSON<Category[]>('/api/categories');
 }
 
-/** Variant-level listing for a category; group these on the UI */
+/** Variant-level listing for a category; returns one page + totalCount for pagination UI */
 export async function fetchCategoryListing(
   params: ProductListingParams
-): Promise<VariantListItem[]> {
+): Promise<CategoryListingResult> {
   const sp = new URLSearchParams();
   sp.set('CategorySlug', params.categorySlug);
   if (params.color) sp.set('Color', params.color);
@@ -500,7 +518,14 @@ export async function fetchCategoryListing(
   if (params.page) sp.set('Page', params.page);
   if (params.pageSize) sp.set('PageSize', params.pageSize);
 
-  return requestJSON<VariantListItem[]>(`/api/products?${sp.toString()}`);
+  const raw = await requestJSON<ProductListPageResponse>(`/api/products?${sp.toString()}`);
+  return {
+    items: raw.items ?? [],
+    totalCount: raw.totalCount ?? 0,
+    page: raw.page ?? 1,
+    pageSize: raw.pageSize ?? 24,
+    totalPages: raw.totalPages ?? 0,
+  };
 }
 
 /** Product group detail (with all variants + color/size facets) */

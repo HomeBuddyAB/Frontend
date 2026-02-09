@@ -1,5 +1,6 @@
 import Breadcrumbs from '@/components/Breadcrumbs';
 import ListingFilters from '@/components/ListingFilters';
+import PaginationBar from '@/components/PaginationBar';
 import { fetchCategories, fetchCategoryListing, groupVariantsToProducts } from '@/lib/api-client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -24,7 +25,8 @@ export default async function CategoryPage(props: Props) {
   const searchParams = await props.searchParams;
 
   const categorySlug = decodeURIComponent(params.category);
-  const [categories, rows] = await Promise.all([
+  const pageParam = typeof searchParams.page === 'string' ? searchParams.page : '1';
+  const [categories, listing] = await Promise.all([
     fetchCategories(),
     fetchCategoryListing({
       categorySlug,
@@ -33,16 +35,15 @@ export default async function CategoryPage(props: Props) {
       minPrice: typeof searchParams.min === 'string' ? searchParams.min : undefined,
       maxPrice: typeof searchParams.max === 'string' ? searchParams.max : undefined,
       sort: (typeof searchParams.sort === 'string' ? searchParams.sort : 'price-asc') as any,
-      page: typeof searchParams.page === 'string' ? searchParams.page : undefined,
+      page: pageParam,
       pageSize: typeof searchParams.pageSize === 'string' ? searchParams.pageSize : '24',
     }),
   ]);
 
   const category = categories.find((c) => c.slug === categorySlug);
-  // Use the grouping function to get display-ready product cards
+  const rows = listing.items;
   const groupedProducts = groupVariantsToProducts(rows);
 
-  // Derive naive facets for the filter UI from rows
   const availableColors = Array.from(
     new Set(rows.map((r) => r.color).filter((x): x is string => !!x))
   ).sort((a, b) => a.localeCompare(b));
@@ -50,6 +51,15 @@ export default async function CategoryPage(props: Props) {
   const availableSizes = Array.from(
     new Set(rows.map((r) => r.size).filter((x): x is string => !!x))
   ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+  const paginationSearchParams: Record<string, string> = {};
+  if (typeof searchParams.color === 'string') paginationSearchParams.color = searchParams.color;
+  if (typeof searchParams.size === 'string') paginationSearchParams.size = searchParams.size;
+  if (typeof searchParams.min === 'string') paginationSearchParams.min = searchParams.min;
+  if (typeof searchParams.max === 'string') paginationSearchParams.max = searchParams.max;
+  if (typeof searchParams.sort === 'string') paginationSearchParams.sort = searchParams.sort;
+  paginationSearchParams.page = pageParam;
+  paginationSearchParams.pageSize = String(listing.pageSize);
 
   return (
     <main className="min-h-screen pb-24" style={{ backgroundColor: "#FAF3E0" }}>
@@ -78,8 +88,8 @@ export default async function CategoryPage(props: Props) {
               </h1>
             </div>
             <div className="text-sm font-bold tracking-wide uppercase px-4 py-2 rounded-lg" style={{ backgroundColor: "#FFFFFF", color: "#5A6C7D", border: "2px solid #E8DCC4" }}>
-              {groupedProducts.length}{" "}
-              {groupedProducts.length === 1 ? "Product" : "Products"}
+              {listing.totalCount} Variant{listing.totalCount !== 1 ? "s" : ""}
+              {listing.totalPages > 1 ? ` · Page ${listing.page} of ${listing.totalPages}` : ""}
             </div>
           </div>
         </div>
@@ -215,6 +225,15 @@ export default async function CategoryPage(props: Props) {
                 })}
               </div>
             )}
+
+            <PaginationBar
+              currentPage={listing.page}
+              totalPages={listing.totalPages}
+              basePath={`/shop/${encodeURIComponent(categorySlug)}`}
+              searchParams={paginationSearchParams}
+              totalCount={listing.totalCount}
+              pageSize={listing.pageSize}
+            />
           </section>
         </div>
       </div>

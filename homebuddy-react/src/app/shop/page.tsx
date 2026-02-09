@@ -4,121 +4,78 @@ import { fetchCategories } from '@/lib/api-client';
 import { Item, itemService } from '@/lib/services/adminServices';
 import type { Category } from '@/lib/shop-types';
 import Link from 'next/link';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import PaginationBar from '@/components/PaginationBar';
 
-function filterItemsBySearch(items: Item[], query: string): Item[] {
-  if (!query.trim()) return items;
-  const q = query.trim().toLowerCase();
-  return items.filter(
-    (item) =>
-      item.groupName?.toLowerCase().includes(q) ||
-      item.mainCategory?.toLowerCase().includes(q) ||
-      (item.slug && item.slug.toLowerCase().includes(q)) ||
-      (item.sku && item.sku.toLowerCase().includes(q)) ||
-      (item.color && item.color.toLowerCase().includes(q))
-  );
-}
+const ITEMS_PER_PAGE = 12;
 
 export default function ShopLanding() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const urlSearch = searchParams.get('search') ?? '';
+  const pageFromUrl = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
 
   const [categories, setCategories] = useState<Category[]>([]);
-  const [allItems, setAllItems] = useState<Item[]>([]);
-  const [displayedItems, setDisplayedItems] = useState<Item[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [items, setItems] = useState<Item[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [searchInput, setSearchInput] = useState(urlSearch);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const itemsPerPage = 12;
-
-  const filteredItems = useMemo(() => filterItemsBySearch(allItems, urlSearch), [allItems, urlSearch]);
-
-  const fetchAllItems = async (search?: string): Promise<Item[]> => {
-    try {
-      let pageNumber = 1;
-      const pageSize = 30;
-      let items: Item[] = [];
-      let fetchedItems: Item[] = [];
-
-      do {
-        const response = await itemService.getAll(pageNumber, pageSize, search);
-        if (response.status !== 200 || !response.data) {
-          throw new Error('Failed to fetch items');
-        }
-        fetchedItems = response.data;
-        items = items.concat(fetchedItems);
-        pageNumber++;
-      } while (fetchedItems.length === pageSize);
-
-      return items;
-    } catch (error) {
-      console.error('Failed to fetch items:', error);
-      return [];
-    }
-  };
-
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const searchTerm = urlSearch.trim() || undefined;
-        const [categoriesData, itemsData] = await Promise.all([
-          fetchCategories().catch(() => []),
-          fetchAllItems(searchTerm)
-        ]);
-
-        setCategories((prev) => (categoriesData.length > 0 ? categoriesData : prev));
-        setAllItems(itemsData);
-        setDisplayedItems(itemsData.slice(0, itemsPerPage));
-      } catch (err) {
-        setError('Failed to load shop data');
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, [urlSearch]);
 
   useEffect(() => {
     setSearchInput(urlSearch);
   }, [urlSearch]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [urlSearch]);
+    const loadData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const searchTerm = urlSearch.trim() || undefined;
+        const [categoriesData, response] = await Promise.all([
+          fetchCategories().catch(() => []),
+          itemService.getAll(pageFromUrl, ITEMS_PER_PAGE, searchTerm),
+        ]);
 
-  useEffect(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    setDisplayedItems(filteredItems.slice(startIndex, endIndex));
-  }, [currentPage, filteredItems]);
+        setCategories((prev) => (categoriesData.length > 0 ? categoriesData : prev));
 
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+        if (response.error || !response.data) {
+          throw new Error(response.error ?? 'Failed to fetch products');
+        }
+        const paged = response.data;
+        setItems(paged.items);
+        setTotalCount(paged.totalCount);
+        setTotalPages(paged.totalPages);
+      } catch (err) {
+        setError('Failed to load shop data');
+        console.error(err);
+        setItems([]);
+        setTotalCount(0);
+        setTotalPages(0);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [urlSearch, pageFromUrl]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const q = searchInput.trim();
-    const params = new URLSearchParams(searchParams.toString());
-    if (q) {
-      params.set('search', q);
-    } else {
-      params.delete('search');
-    }
+    const params = new URLSearchParams();
+    if (q) params.set('search', q);
+    params.set('page', '1');
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const paginationSearchParams: Record<string, string> = { page: String(pageFromUrl) };
+  if (urlSearch) paginationSearchParams.search = urlSearch;
 
   if (isLoading) {
     return (
@@ -131,7 +88,7 @@ export default function ShopLanding() {
     );
   }
 
-  if (categories.length === 0 && allItems.length === 0) {
+  if (categories.length === 0 && items.length === 0 && totalCount === 0) {
     return (
       <main className="container mx-auto px-4 py-24 text-center min-h-screen" style={{ backgroundColor: '#FAF3E0' }}>
         <div className="max-w-md mx-auto">
@@ -219,9 +176,9 @@ export default function ShopLanding() {
               </div>
               {urlSearch && (
                 <p className="mt-2 text-sm" style={{ color: '#5A6C7D' }}>
-                  {filteredItems.length === 0
+                  {totalCount === 0
                     ? `No products found for "${urlSearch}". Try a different search.`
-                    : `${filteredItems.length} result${filteredItems.length !== 1 ? 's' : ''} for "${urlSearch}"`}
+                    : `${totalCount} result${totalCount !== 1 ? 's' : ''} for "${urlSearch}"`}
                 </p>
               )}
             </form>
@@ -231,18 +188,18 @@ export default function ShopLanding() {
                 {urlSearch ? 'Search results' : 'All Products'}
               </h2>
               <span className="text-sm font-medium" style={{ color: '#5A6C7D' }}>
-                Showing {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filteredItems.length)} of {filteredItems.length}
+                Showing {totalCount === 0 ? 0 : (pageFromUrl - 1) * ITEMS_PER_PAGE + 1}–{Math.min(pageFromUrl * ITEMS_PER_PAGE, totalCount)} of {totalCount}
               </span>
             </div>
 
-            {filteredItems.length === 0 ? (
+            {items.length === 0 && !isLoading ? (
               <div className="py-16 text-center rounded-xl border-2" style={{ borderColor: '#E8DCC4', backgroundColor: '#FFFFFF' }}>
                 <p className="text-lg font-medium mb-2" style={{ color: '#2D3E50' }}>No products match your search.</p>
                 <p className="text-sm" style={{ color: '#5A6C7D' }}>Try a different keyword or clear the search to see all products.</p>
               </div>
             ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-              {displayedItems.map((item) => {
+              {items.map((item) => {
                 const categorySlug = item.mainCategory.toLowerCase().replace(/\s+/g, '-');
                 const href = `/shop/${encodeURIComponent(categorySlug)}/${encodeURIComponent(item.slug)}?sku=${encodeURIComponent(item.sku)}`;
 
@@ -324,38 +281,14 @@ export default function ShopLanding() {
             </div>
             )}
 
-            {/* Pagination - Friendly Style */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 pt-12 border-t-2" style={{ borderColor: '#E8DCC4' }}>
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="px-6 py-3 rounded-lg font-bold text-sm tracking-wide uppercase transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-lg hover:-translate-y-1"
-                  style={{ 
-                    backgroundColor: currentPage === 1 ? '#E8DCC4' : '#F4A261',
-                    color: '#FFFFFF'
-                  }}
-                >
-                  ← Previous
-                </button>
-
-                <span className="px-4 py-2 rounded-lg font-bold text-sm" style={{ backgroundColor: '#FFFFFF', color: '#2D3E50', border: '2px solid #E8DCC4' }}>
-                  Page {currentPage} of {totalPages}
-                </span>
-
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="px-6 py-3 rounded-lg font-bold text-sm tracking-wide uppercase transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-lg hover:-translate-y-1"
-                  style={{ 
-                    backgroundColor: currentPage === totalPages ? '#E8DCC4' : '#F4A261',
-                    color: '#FFFFFF'
-                  }}
-                >
-                  Next →
-                </button>
-              </div>
-            )}
+            <PaginationBar
+              currentPage={pageFromUrl}
+              totalPages={totalPages}
+              basePath={pathname}
+              searchParams={paginationSearchParams}
+              totalCount={totalCount}
+              pageSize={ITEMS_PER_PAGE}
+            />
           </section>
         )}
       </div>
