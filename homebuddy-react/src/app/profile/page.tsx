@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import ProfileHeader from "@/components/Profile/ProfileHeader";
 import AccountSettings from "@/components/Profile/AccountSettings";
+import AddressBook from "@/components/Profile/AddressBook";
 import DangerZone from "@/components/Profile/DangerZone";
 import OrderHistory from "@/components/Profile/OrderHistory";
 import { userService } from "@/services/user.service";
@@ -90,6 +91,9 @@ const ProfilePage = () => {
           </AnimatedContent>
           <AnimatedContent delay={0.3} distance={30}>
             <OrderHistory orders={orderHistory} isLoading={ordersLoading} />
+          </AnimatedContent>
+          <AnimatedContent delay={0.35} distance={30}>
+            <AddressBook />
           </AnimatedContent>
           <AnimatedContent delay={0.4} distance={30}>
             <DangerZone />
