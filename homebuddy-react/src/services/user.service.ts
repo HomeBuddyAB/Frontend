@@ -158,5 +158,14 @@ export const userService = {
         } catch (error: any) {
             return { error: error.message || 'Failed to checkout cart', status: 500 };
         }
-    }
+    },
+
+    // Link an existing order (by order number) to the current user. Call after registering with same email as the order.
+    async claimOrder(orderNo: string): Promise<ApiResponse<{ message: string }>> {
+        try {
+            return await apiClient.post<{ message: string }>('/api/Orders/claim', { orderNo: orderNo.trim() });
+        } catch (error: any) {
+            return { error: error.message || 'Failed to link order', status: 500 };
+        }
+    },
 };

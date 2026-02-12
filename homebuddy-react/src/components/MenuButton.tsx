@@ -7,7 +7,7 @@ import Link from "next/link";
 import LoginAndRegister from "./Popups/LoginAndRegister";
 
 export default function MenuButton() {
-  const { isAuthenticated, user, logout, showLoginPopup, setShowLoginPopup, isLoading } = useAuth();
+  const { isAuthenticated, user, logout, showLoginPopup, loginPopupMode, setShowLoginPopup, isLoading } = useAuth();
   const [loginOrSignup, setLoginOrSignup] = useState<"login" | "signup">("login");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -162,7 +162,7 @@ export default function MenuButton() {
             e.currentTarget.style.backgroundColor = "#2B2B2B";
             e.currentTarget.style.borderColor = "#362222";
           }}
-          onClick={() => setShowLoginPopup(true)}
+          onClick={() => setShowLoginPopup(true, "login")}
         >
           <span className="relative z-10 flex items-center justify-center gap-2">
             <span className="text-lg">🔐</span>
@@ -175,7 +175,7 @@ export default function MenuButton() {
         </button>
       )}
 
-      <LoginAndRegister open={showLoginPopup} onClose={handleClose} />
+      <LoginAndRegister open={showLoginPopup} onClose={handleClose} initialMode={loginPopupMode} />
     </div>
   );
 }

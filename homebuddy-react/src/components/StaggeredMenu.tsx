@@ -53,7 +53,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
   onMenuClose,
 }: StaggeredMenuProps) => {
   const openRef = useRef(false);
-  const { isAdmin } = useAuth();
+  const { isAdmin, isAuthenticated, setShowLoginPopup } = useAuth();
 
   const panelRef = useRef<HTMLDivElement | null>(null);
   const preLayersRef = useRef<HTMLDivElement | null>(null);
@@ -425,6 +425,34 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
               )}
             </ul>
             {!isAdmin ? <CartButton /> : null}
+            {!isAuthenticated && (
+              <button
+                type="button"
+                className="relative w-full px-5 py-3 text-sm font-bold text-white border-2 transition-all duration-300 hover:scale-[1.02] active:scale-95 group overflow-hidden text-left"
+                style={{
+                  borderColor: "#362222",
+                  backgroundColor: "#2B2B2B",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#362222";
+                  e.currentTarget.style.borderColor = "#8B4545";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#2B2B2B";
+                  e.currentTarget.style.borderColor = "#362222";
+                }}
+                onClick={() => setShowLoginPopup(true, "signup")}
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <span className="text-lg">📝</span>
+                  <span className="tracking-wider">REGISTER</span>
+                </span>
+                <span
+                  className="absolute inset-0 w-0 transition-all duration-300 ease-out group-hover:w-full"
+                  style={{ backgroundColor: "rgba(139, 69, 69, 0.15)" }}
+                />
+              </button>
+            )}
             <MenuButton />
 
             {displaySocials && socialItems && socialItems.length > 0 && (

@@ -11,7 +11,7 @@ import { taxService, type CountryTaxBracket } from "@/lib/services/tax.service";
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, setShowLoginPopup } = useAuth();
   const router = useRouter();
 
   // State for "Fake" processing
@@ -106,10 +106,10 @@ export default function CheckoutPage() {
 
       if (response.data) {
         // Store order number
-        setOrderNumber(response.data.orderNo);
+        setOrderNumber(response.data.orderNo ?? "");
 
-        // Clear the cart
-        await userService.clearCart();
+        // Clear the cart (server cart only when logged in; local cart always)
+        if (user) await userService.clearCart();
         clearCart();
 
         setIsSuccess(true);
@@ -204,6 +204,28 @@ export default function CheckoutPage() {
             We've sent a confirmation email to <strong>{formData.email}</strong>
           </p>
 
+          {!user && orderNumber && (
+            <div className="mb-8 p-4 rounded-xl border-2 text-left" style={{ backgroundColor: "#FFF8F3", borderColor: "#F4A261" }}>
+              <p className="text-sm font-semibold mb-2" style={{ color: "#2D3E50" }}>
+                Create an account to save this order to your order history
+              </p>
+              <p className="text-xs mb-3" style={{ color: "#5A6C7D" }}>
+                Register with <strong>{formData.email}</strong> and this order will be linked to your account.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined') window.sessionStorage.setItem('pendingClaimOrderNo', orderNumber);
+                  setShowLoginPopup(true, 'signup');
+                }}
+                className="w-full py-3 rounded-lg font-bold text-sm tracking-wider transition-all hover:shadow-lg"
+                style={{ backgroundColor: "#F4A261", color: "#FFFFFF" }}
+              >
+                Register and link this order
+              </button>
+            </div>
+          )}
+
           <Link
             href="/shop"
             className="block w-full py-4 rounded-lg font-black uppercase tracking-widest transition-all hover:shadow-xl"
@@ -236,6 +258,28 @@ export default function CheckoutPage() {
       </div>
 
       <div className="container mx-auto px-6 md:px-12 py-12">
+        {/* Guest: Register to attach order to your account */}
+        {!user && (
+          <div className="mb-8 p-6 rounded-xl border-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style={{ backgroundColor: "#FFF8F3", borderColor: "#F4A261" }}>
+            <div>
+              <h3 className="font-bold text-lg mb-1" style={{ color: "#2D3E50" }}>
+                Create an account and attach this order
+              </h3>
+              <p className="text-sm" style={{ color: "#5A6C7D" }}>
+                Register now and this purchase will be saved to your account for order history and support.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowLoginPopup(true, "signup")}
+              className="shrink-0 px-6 py-3 rounded-lg font-bold text-sm tracking-wider transition-all hover:shadow-lg whitespace-nowrap"
+              style={{ backgroundColor: "#F4A261", color: "#FFFFFF" }}
+            >
+              Register
+            </button>
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <div className="mb-8 p-6 rounded-xl border-2" style={{ backgroundColor: "#FFE5E5", borderColor: "#FF6B6B", color: "#C92A2A" }}>

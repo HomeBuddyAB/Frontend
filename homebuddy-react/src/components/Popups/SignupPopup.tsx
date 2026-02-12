@@ -4,6 +4,10 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
+import { customerService } from '@/services/customer.service';
+
+const inputBorder = "#423F3E";
+const inputFocus = "#8B4545";
 
 export default function SignupPopup({ onLoginClick }: { onLoginClick?: () => void }) {
     const [email, setEmail] = useState("");
@@ -14,8 +18,17 @@ export default function SignupPopup({ onLoginClick }: { onLoginClick?: () => voi
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [agreeToTerms, setAgreeToTerms] = useState(false);
+    // Address book fields (optional – saved after account creation)
+    const [name, setName] = useState("");
+    const [phone, setPhone] = useState("");
+    const [streetAddress, setStreetAddress] = useState("");
+    const [city, setCity] = useState("");
+    const [postalCode, setPostalCode] = useState("");
+    const [countryCode, setCountryCode] = useState("");
     const { register } = useAuth();
     const { getGuestCartJson, replaceWithMergedCart } = useCart();
+
+    const hasAddressInfo = name.trim() || phone.trim() || streetAddress.trim() || city.trim() || postalCode.trim() || countryCode.trim();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -38,8 +51,27 @@ export default function SignupPopup({ onLoginClick }: { onLoginClick?: () => voi
 
         if (!result.success) {
             setError(result.error || 'Signup failed');
-        } else if (result.cart) {
+            setIsLoading(false);
+            return;
+        }
+
+        if (result.cart) {
             replaceWithMergedCart(result.cart);
+        }
+
+        if (hasAddressInfo) {
+            const addressRes = await customerService.create({
+                name: name.trim() || email,
+                email: email.trim(),
+                phone: phone.trim() || undefined,
+                streetAddress: streetAddress.trim() || undefined,
+                city: city.trim() || undefined,
+                postalCode: postalCode.trim() || undefined,
+                countryCode: countryCode.trim().toUpperCase() || undefined,
+            });
+            if (addressRes.error) {
+                setError(addressRes.error);
+            }
         }
 
         setIsLoading(false);
@@ -73,12 +105,12 @@ export default function SignupPopup({ onLoginClick }: { onLoginClick?: () => voi
                         placeholder="you@example.com"
                         className="w-full px-4 py-3 bg-black/40 border rounded text-white placeholder-gray-600 outline-none transition-colors focus:border-opacity-100"
                         style={{
-                            borderColor: "#423F3E",
+                            borderColor: inputBorder,
                         }}
                         onFocus={(e) =>
-                            (e.currentTarget.style.borderColor = "#8B4545")
+                            (e.currentTarget.style.borderColor = inputFocus)
                         }
-                        onBlur={(e) => (e.currentTarget.style.borderColor = "#423F3E")}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = inputBorder)}
                         required
                     />
                 </div>
@@ -96,12 +128,12 @@ export default function SignupPopup({ onLoginClick }: { onLoginClick?: () => voi
                             placeholder="••••••••"
                             className="w-full px-4 py-3 bg-black/40 border rounded text-white placeholder-gray-600 outline-none transition-colors pr-10"
                             style={{
-                                borderColor: "#423F3E",
+                                borderColor: inputBorder,
                             }}
                             onFocus={(e) =>
-                                (e.currentTarget.style.borderColor = "#8B4545")
+                                (e.currentTarget.style.borderColor = inputFocus)
                             }
-                            onBlur={(e) => (e.currentTarget.style.borderColor = "#423F3E")}
+                            onBlur={(e) => (e.currentTarget.style.borderColor = inputBorder)}
                             required
                         />
                         <button
@@ -131,12 +163,12 @@ export default function SignupPopup({ onLoginClick }: { onLoginClick?: () => voi
                             placeholder="••••••••"
                             className="w-full px-4 py-3 bg-black/40 border rounded text-white placeholder-gray-600 outline-none transition-colors pr-10"
                             style={{
-                                borderColor: "#423F3E",
+                                borderColor: inputBorder,
                             }}
                             onFocus={(e) =>
-                                (e.currentTarget.style.borderColor = "#8B4545")
+                                (e.currentTarget.style.borderColor = inputFocus)
                             }
-                            onBlur={(e) => (e.currentTarget.style.borderColor = "#423F3E")}
+                            onBlur={(e) => (e.currentTarget.style.borderColor = inputBorder)}
                             required
                         />
                         <button
@@ -150,6 +182,96 @@ export default function SignupPopup({ onLoginClick }: { onLoginClick?: () => voi
                                 <Eye className="w-5 h-5" />
                             )}
                         </button>
+                    </div>
+                </div>
+
+                {/* Optional: Save to address book */}
+                <div className="space-y-3 pt-2 border-t border-[#362222]">
+                    <p className="text-gray-400 text-xs font-medium uppercase tracking-wider">
+                        Optional – save to address book
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label className="block text-white text-sm font-medium mb-1">Name</label>
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Your name"
+                                className="w-full px-4 py-2.5 bg-black/40 border rounded text-white placeholder-gray-600 outline-none transition-colors text-sm"
+                                style={{ borderColor: inputBorder }}
+                                onFocus={(e) => (e.currentTarget.style.borderColor = inputFocus)}
+                                onBlur={(e) => (e.currentTarget.style.borderColor = inputBorder)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-white text-sm font-medium mb-1">Phone</label>
+                            <input
+                                type="text"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                placeholder="+1 234 567 8900"
+                                className="w-full px-4 py-2.5 bg-black/40 border rounded text-white placeholder-gray-600 outline-none transition-colors text-sm"
+                                style={{ borderColor: inputBorder }}
+                                onFocus={(e) => (e.currentTarget.style.borderColor = inputFocus)}
+                                onBlur={(e) => (e.currentTarget.style.borderColor = inputBorder)}
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-white text-sm font-medium mb-1">Street address</label>
+                        <input
+                            type="text"
+                            value={streetAddress}
+                            onChange={(e) => setStreetAddress(e.target.value)}
+                            placeholder="123 Main St"
+                            className="w-full px-4 py-2.5 bg-black/40 border rounded text-white placeholder-gray-600 outline-none transition-colors text-sm"
+                            style={{ borderColor: inputBorder }}
+                            onFocus={(e) => (e.currentTarget.style.borderColor = inputFocus)}
+                            onBlur={(e) => (e.currentTarget.style.borderColor = inputBorder)}
+                        />
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label className="block text-white text-sm font-medium mb-1">City</label>
+                            <input
+                                type="text"
+                                value={city}
+                                onChange={(e) => setCity(e.target.value)}
+                                placeholder="City"
+                                className="w-full px-4 py-2.5 bg-black/40 border rounded text-white placeholder-gray-600 outline-none transition-colors text-sm"
+                                style={{ borderColor: inputBorder }}
+                                onFocus={(e) => (e.currentTarget.style.borderColor = inputFocus)}
+                                onBlur={(e) => (e.currentTarget.style.borderColor = inputBorder)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-white text-sm font-medium mb-1">Postal code</label>
+                            <input
+                                type="text"
+                                value={postalCode}
+                                onChange={(e) => setPostalCode(e.target.value)}
+                                placeholder="12345"
+                                className="w-full px-4 py-2.5 bg-black/40 border rounded text-white placeholder-gray-600 outline-none transition-colors text-sm"
+                                style={{ borderColor: inputBorder }}
+                                onFocus={(e) => (e.currentTarget.style.borderColor = inputFocus)}
+                                onBlur={(e) => (e.currentTarget.style.borderColor = inputBorder)}
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-white text-sm font-medium mb-1">Country code</label>
+                        <input
+                            type="text"
+                            value={countryCode}
+                            onChange={(e) => setCountryCode(e.target.value.toUpperCase().slice(0, 2))}
+                            placeholder="US, SE, etc."
+                            maxLength={2}
+                            className="w-full px-4 py-2.5 bg-black/40 border rounded text-white placeholder-gray-600 outline-none transition-colors text-sm max-w-[6rem]"
+                            style={{ borderColor: inputBorder }}
+                            onFocus={(e) => (e.currentTarget.style.borderColor = inputFocus)}
+                            onBlur={(e) => (e.currentTarget.style.borderColor = inputBorder)}
+                        />
                     </div>
                 </div>
 

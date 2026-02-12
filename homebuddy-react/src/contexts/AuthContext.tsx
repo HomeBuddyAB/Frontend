@@ -4,8 +4,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/auth.service';
+import { userService } from '@/services/user.service';
 import { UserFromToken } from '@/types/api.types';
 import { analytics } from '@/lib/analytics';
+
+const PENDING_CLAIM_ORDER_KEY = 'pendingClaimOrderNo';
+
+export type LoginPopupMode = 'login' | 'signup';
 
 interface AuthContextType {
     user: UserFromToken | null;
@@ -13,7 +18,8 @@ interface AuthContextType {
     isLoading: boolean;
     isAdmin: boolean;
     showLoginPopup: boolean;
-    setShowLoginPopup: (show: boolean) => void;
+    loginPopupMode: LoginPopupMode;
+    setShowLoginPopup: (show: boolean, mode?: LoginPopupMode) => void;
     login: (email: string, password: string, guestCart?: string) => Promise<{ success: boolean; error?: string; cart?: string }>;
     register: (email: string, password: string, guestCart?: string) => Promise<{ success: boolean; error?: string; cart?: string }>;
     adminLogin: (userName: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -26,8 +32,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<UserFromToken | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [showLoginPopup, setShowLoginPopup] = useState<boolean>(false);
+    const [showLoginPopup, setShowLoginPopupState] = useState<boolean>(false);
+    const [loginPopupMode, setLoginPopupMode] = useState<LoginPopupMode>('login');
     const router = useRouter();
+
+    const setShowLoginPopup = useCallback((show: boolean, mode?: LoginPopupMode) => {
+        setShowLoginPopupState(show);
+        if (mode !== undefined) setLoginPopupMode(mode);
+    }, []);
 
     const checkAuthStatus = useCallback(async () => {
         try {
@@ -58,7 +70,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             setUser(response.data as UserFromToken);
-            setShowLoginPopup(false);
+            setShowLoginPopupState(false);
             router.push('/profile');
 
             analytics.login('email');
@@ -78,10 +90,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             setUser(response.data as UserFromToken);
-            setShowLoginPopup(false);
-            router.push('/profile');
+            setShowLoginPopupState(false);
+            if (typeof window !== 'undefined' && window.location?.pathname !== '/checkout') {
+                router.push('/profile');
+            }
 
             analytics.signUp('email');
+
+            if (typeof window !== 'undefined') {
+                const pendingOrderNo = sessionStorage.getItem(PENDING_CLAIM_ORDER_KEY);
+                if (pendingOrderNo) {
+                    sessionStorage.removeItem(PENDING_CLAIM_ORDER_KEY);
+                    userService.claimOrder(pendingOrderNo).catch(() => {});
+                }
+            }
 
             return { success: true, cart: response.cart };
         } catch (error: any) {
@@ -98,7 +120,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             setUser(response.data as UserFromToken);
-            setShowLoginPopup(false);
+            setShowLoginPopupState(false);
             // Navigate to the admin dashboard root (existing route)
             router.push('/admin');
             return { success: true };
@@ -138,6 +160,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isLoading,
         isAdmin,
         showLoginPopup,
+        loginPopupMode,
         setShowLoginPopup,
         login,
         register,
