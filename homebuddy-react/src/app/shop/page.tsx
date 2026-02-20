@@ -152,7 +152,7 @@ export default function ShopLanding() {
         )}
 
         {/* Product Grid - Clean & Modern */}
-        {allItems.length > 0 && (
+        {items.length > 0 && (
           <section>
             {/* Search bar */}
             <form onSubmit={handleSearchSubmit} className="mb-8">
