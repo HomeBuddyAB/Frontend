@@ -103,8 +103,8 @@ export default function Navbar() {
 
     return (
         <>
-            {/* The Unified Fixed Header: Z-index must be higher than StaggeredMenu (z-60 > z-40) */}
-            <header className="fixed top-0 left-0 w-full p-6 z-60 flex items-center justify-between pointer-events-none">
+            {/* Fixed above blur overlay (35) and menu (50). Use inline zIndex so we don't rely on Tailwind z-60 existing. */}
+            <header className="fixed top-0 left-0 w-full p-6 flex items-center justify-between pointer-events-none" style={{ zIndex: 60 }}>
 
                 {/* 1. Logo/Branding on the left */}
                 <Link className="flex items-center select-none pointer-events-auto hover:scale-101" href="/">

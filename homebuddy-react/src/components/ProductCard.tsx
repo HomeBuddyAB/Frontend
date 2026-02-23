@@ -8,9 +8,11 @@ import { GroupedProductCard } from '@/lib/shop-types';
 export default function ProductCard({
   product,
   categorySlug,
+  compact = false,
 }: {
   product: GroupedProductCard;
   categorySlug: string;
+  compact?: boolean;
 }) {
   const priceText =
     product.minPrice === product.maxPrice
@@ -33,11 +35,11 @@ export default function ProductCard({
   return (
     <Link
       href={href}
-      className="group overflow-hidden rounded-xl border-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 h-full flex flex-col"
+      className={`group overflow-hidden border-2 transition-all duration-300 h-full flex flex-col ${compact ? 'rounded-lg hover:shadow-lg hover:-translate-y-0.5' : 'rounded-xl hover:shadow-2xl hover:-translate-y-2'}`}
       style={{ backgroundColor: '#FFFFFF', borderColor: '#E8DCC4' }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = '#F4A261';
-        e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(244, 162, 97, 0.1), 0 10px 10px -5px rgba(244, 162, 97, 0.04)';
+        e.currentTarget.style.boxShadow = compact ? '0 8px 16px -4px rgba(244, 162, 97, 0.15)' : '0 20px 25px -5px rgba(244, 162, 97, 0.1), 0 10px 10px -5px rgba(244, 162, 97, 0.04)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.borderColor = '#E8DCC4';
@@ -78,32 +80,34 @@ export default function ProductCard({
 
         {/* NEW Badge - Always show on products */}
         {product.anyInStock && (
-          <span className="absolute top-3 right-3 text-xs px-3 py-1 font-bold tracking-wider rounded-full" style={{ backgroundColor: '#F4A261', color: '#FFFFFF' }}>
+          <span className={`absolute font-bold tracking-wider rounded-full ${compact ? 'top-1 right-1 text-[10px] px-1.5 py-0.5' : 'top-3 right-3 text-xs px-3 py-1'}`} style={{ backgroundColor: '#F4A261', color: '#FFFFFF' }}>
             NEW
           </span>
         )}
 
-        {/* Quick View Hint on Hover */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
-          <div className="text-center py-3 font-bold uppercase text-xs tracking-widest rounded-lg" style={{ backgroundColor: '#F4A261', color: '#FFFFFF' }}>
-            View Details
+        {/* Quick View Hint on Hover - hide in compact to keep height minimal */}
+        {!compact && (
+          <div className="absolute bottom-0 left-0 right-0 p-4 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
+            <div className="text-center py-3 font-bold uppercase text-xs tracking-widest rounded-lg" style={{ backgroundColor: '#F4A261', color: '#FFFFFF' }}>
+              View Details
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      <div className="p-4 flex-1 flex flex-col">
+      <div className={`flex flex-col shrink-0 ${compact ? 'p-1.5' : 'p-4 flex-1'}`}>
         {/* Product Name */}
-        <h3 className="font-bold text-lg mb-2 line-clamp-2 uppercase tracking-wide group-hover:text-[#F4A261] transition-colors duration-300" style={{ color: '#2D3E50' }}>
+        <h3 className={`font-bold line-clamp-1 uppercase tracking-wide group-hover:text-[#F4A261] transition-colors duration-300 ${compact ? 'text-xs mb-0.5' : 'text-lg mb-2 line-clamp-2'}`} style={{ color: '#2D3E50' }}>
           {product.groupName}
         </h3>
 
         {/* Price */}
-        <div className="text-2xl font-black mb-3" style={{ color: '#F4A261' }}>
+        <div className={`font-black ${compact ? 'text-sm' : 'text-2xl mb-3'}`} style={{ color: '#F4A261' }}>
           {priceText}
         </div>
 
-        {/* METADATA DISPLAY - Shows if available */}
-        {(product.description || product.brand || product.material) && (
+        {/* METADATA DISPLAY - hide in compact */}
+        {!compact && (product.description || product.brand || product.material) && (
           <div className="text-xs space-y-1 mb-3 flex-1" style={{ color: '#5A6C7D' }}>
             {product.brand && (
               <div className="truncate">
@@ -125,9 +129,9 @@ export default function ProductCard({
 
         {/* Variants Badge */}
         {product.totalVariants > 1 && (
-          <div className="mt-auto pt-3 border-t-2" style={{ borderColor: '#E8DCC4' }}>
-            <div className="inline-flex items-center gap-2 text-xs font-bold px-3 py-1 rounded-full" style={{ backgroundColor: '#FFF8F3', color: '#F4A261' }}>
-              <span>+{product.totalVariants} Options Available</span>
+          <div className={`border-t-2 ${compact ? 'pt-1 mt-0.5' : 'mt-auto pt-3'}`} style={{ borderColor: '#E8DCC4' }}>
+            <div className={`inline-flex items-center font-bold rounded-full ${compact ? 'text-[10px] px-1.5 py-0.5' : 'gap-2 text-xs px-3 py-1'}`} style={{ backgroundColor: '#FFF8F3', color: '#F4A261' }}>
+              <span>+{product.totalVariants} {compact ? 'opts' : 'Options Available'}</span>
             </div>
           </div>
         )}

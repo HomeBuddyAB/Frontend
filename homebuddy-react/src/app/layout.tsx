@@ -43,15 +43,18 @@ export default function RootLayout({
           <CartProvider>
             <Suspense>
               <LoadingBar />
+              {/* Backdrop when menu is open: above page content, below navbar and menu. Stacking: content (0) < overlay (35) < menu (50) < navbar (60). */}
               <div
                 id="blurOverlay"
                 className="fixed inset-0 w-full h-full backdrop-blur-sm transition-opacity duration-300 cursor-pointer"
                 style={{
-                  zIndex: 39,
+                  zIndex: 35,
                   opacity: 0,
                   pointerEvents: 'none',
-                  backgroundColor: 'rgba(0, 0, 0, 0.3)'
+                  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                  isolation: 'isolate',
                 }}
+                aria-hidden="true"
               />
               <Navbar />
               {children}

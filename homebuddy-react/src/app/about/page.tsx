@@ -235,6 +235,34 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* Why HomeBuddy - at bottom of About */}
+      <section className="px-6 py-24" style={{ backgroundColor: "#FFFFFF" }}>
+        <div className="max-w-7xl mx-auto">
+          <AnimatedContent>
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-4xl font-black mb-2" style={{ color: "#2D3E50" }}>
+                Why HomeBuddy?
+              </h2>
+            </div>
+          </AnimatedContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { icon: "⚡", title: "Fast Shipping", text: "Most orders ship within 24 hours." },
+              { icon: "🎯", title: "Expert Guidance", text: "Decades of experience to help you choose." },
+              { icon: "💯", title: "Quality Guarantee", text: "Satisfaction guaranteed on every purchase." },
+            ].map((item, i) => (
+              <AnimatedContent key={item.title} delay={i * 0.1} distance={24}>
+                <div className="text-center p-6 rounded-xl border-2" style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}>
+                  <div className="text-3xl mb-3">{item.icon}</div>
+                  <h3 className="font-bold text-lg mb-2" style={{ color: "#2D3E50" }}>{item.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: "#5A6C7D" }}>{item.text}</p>
+                </div>
+              </AnimatedContent>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="px-6 py-24 text-center border-t-2" style={{ backgroundColor: "#FFFFFF", borderColor: "#E8DCC4" }}>
         <div className="max-w-3xl mx-auto">
