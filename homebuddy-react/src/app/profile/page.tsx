@@ -10,6 +10,7 @@ import OrderHistory from "@/components/Profile/OrderHistory";
 import { userService } from "@/services/user.service";
 import Waves from "@/components/Waves";
 import AnimatedContent from "@/components/AnimatedContent";
+import FavoritesSection from "@/components/Profile/FavoritesSection";
 
 const ProfilePage = () => {
   const { user, isLoading } = useAuth();
@@ -91,6 +92,9 @@ const ProfilePage = () => {
           </AnimatedContent>
           <AnimatedContent delay={0.3} distance={30}>
             <OrderHistory orders={orderHistory} isLoading={ordersLoading} />
+          </AnimatedContent>
+          <AnimatedContent delay={0.33} distance={30}>
+            <FavoritesSection />
           </AnimatedContent>
           <AnimatedContent delay={0.35} distance={30}>
             <AddressBook />

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "react-toastify"; // Ensure you have this installed
+import FavoriteHeart from "@/components/FavoriteHeart";
 
 type Variant = {
   sku: string;
@@ -187,17 +188,24 @@ export default function VariantSelector({
 
         {/* Header */}
         <div className="mb-8 border-b border-[#362222] pb-8">
-          <h1 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tighter uppercase leading-none">
+          <h1
+            className="text-4xl md:text-6xl font-black mb-4 tracking-tighter uppercase leading-none"
+            style={{ color: "#2D3E50" }}
+          >
             {group.name}
           </h1>
 
-          <div className="flex items-center justify-between">
-            <span className="text-3xl font-mono text-[#8B4513]">
-              ${selectedVariant.price.toFixed(2)}
-            </span>
-            <span className="text-xs font-mono text-gray-500 uppercase tracking-widest">
-              SKU: {selectedVariant.sku}
-            </span>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <span className="text-3xl font-mono text-[#8B4513]">
+                ${selectedVariant.price.toFixed(2)}
+              </span>
+              <span className="ml-4 text-xs font-mono text-gray-500 uppercase tracking-widest">
+                SKU: {selectedVariant.sku}
+              </span>
+            </div>
+            {/* Use default (larger) variant on product page for better visibility */}
+            <FavoriteHeart sku={selectedVariant.sku} />
           </div>
         </div>
 
@@ -275,11 +283,11 @@ export default function VariantSelector({
         <button
           disabled={!selectedVariant.inStock || isSuccess}
           onClick={handleAddToCart}
-          className={`w-full py-5 font-black uppercase tracking-[0.2em] text-sm transition-all duration-300 ${isSuccess
-              ? "bg-green-700 text-white cursor-default"
+          className={`w-full py-5 font-black uppercase tracking-[0.2em] text-sm transition-all duration-300 border ${isSuccess
+              ? "bg-green-700 text-white border-green-700 cursor-default"
               : selectedVariant.inStock
-                ? "bg-white text-black hover:bg-[#8B4513] hover:text-white"
-                : "bg-[#362222] text-gray-500 cursor-not-allowed"
+                ? "bg-white text-black border-[#8B4513] hover:bg-[#8B4513] hover:text-white"
+                : "bg-[#362222] text-gray-500 border-[#362222] cursor-not-allowed"
             }`}
         >
           {isSuccess

@@ -4,6 +4,7 @@ import StaggeredMenu, { StaggeredMenuItem, StaggeredMenuSocialItem } from "./Sta
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 // Define your menu items
@@ -27,6 +28,7 @@ export default function Navbar() {
     const [menuOpen, setMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const overlayHandlerRef = useRef<(() => void) | null>(null);
+    const { isAuthenticated, setShowLoginPopup } = useAuth();
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -132,6 +134,23 @@ export default function Navbar() {
                             aria-label="Search products"
                         />
                     </form>
+
+                    {/* Favorites button (header access to wishlist) */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (!isAuthenticated) {
+                                setShowLoginPopup(true, "login");
+                            } else {
+                                router.push("/favorites");
+                            }
+                        }}
+                        className="hidden sm:inline-flex items-center gap-1 px-3 py-2 rounded-full border-2 text-xs font-bold tracking-wide uppercase transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+                        style={{ borderColor: "#E8DCC4", color: "#2D3E50", backgroundColor: "#FFFFFF" }}
+                    >
+                        <span className="text-red-500">♥</span>
+                        <span>Favorites</span>
+                    </button>
 
                     {/* Menu Toggle Button - UPDATED COLORS */}
                     <button

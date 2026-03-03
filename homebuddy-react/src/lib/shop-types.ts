@@ -45,7 +45,8 @@ export type SkuListItem = {
 };
 
 export type GroupedProductCard = {
-  groupId: string;
+  // Optional to align with backend/api-client where groupId may be null/omitted
+  groupId?: string | null;
   groupSlug?: string | null;
   groupName: string;
   primaryImageUrl?: string | null;
