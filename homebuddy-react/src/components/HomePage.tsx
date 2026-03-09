@@ -2,7 +2,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import SplitText from "./SplitText";
@@ -25,6 +24,39 @@ export type CategoryRow = {
   slug: string;
   products: GroupedProductCard[];
 };
+
+type DailyRecommendation = {
+  product: GroupedProductCard;
+  categorySlug: string;
+};
+
+function getDailyRecommendedProduct(rows: CategoryRow[]): DailyRecommendation | null {
+  const inStock: DailyRecommendation[] = [];
+  const all: DailyRecommendation[] = [];
+
+  for (const row of rows) {
+    for (const product of row.products) {
+      const item = { product, categorySlug: row.slug };
+      all.push(item);
+      if (product.anyInStock) {
+        inStock.push(item);
+      }
+    }
+  }
+
+  const pool = inStock.length > 0 ? inStock : all;
+  if (pool.length === 0) return null;
+
+  const today = new Date();
+  const seed = `${today.getUTCFullYear()}-${today.getUTCMonth() + 1}-${today.getUTCDate()}`;
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+
+  const index = hash % pool.length;
+  return pool[index];
+}
 
 const PRODUCTS_PER_ROW = 12;
 
@@ -95,6 +127,7 @@ export default function HomePage() {
   const [searchInput, setSearchInput] = useState("");
   const [categoryRows, setCategoryRows] = useState<CategoryRow[]>([]);
   const [rowsLoading, setRowsLoading] = useState(true);
+  const [dailyRecommendation, setDailyRecommendation] = useState<DailyRecommendation | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -134,6 +167,12 @@ export default function HomePage() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (!rowsLoading && categoryRows.length > 0) {
+      setDailyRecommendation(getDailyRecommendedProduct(categoryRows));
+    }
+  }, [rowsLoading, categoryRows]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const q = searchInput.trim();
@@ -143,8 +182,21 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#FAF3E0" }}>
+      {/* HomeBuddy top banner */}
+      <section className="w-full pt-10 pb-4 flex items-center justify-center">
+        <h1 className="homebuddy-page-banner">HomeBuddy</h1>
+      </section>
+
       {/* Compact Hero - Storefront feel */}
-      <section className="relative px-6 pt-20 pb-12 md:pt-28 md:pb-16 overflow-hidden">
+      <section
+        className="relative px-6 pt-12 pb-12 md:pt-20 md:pb-16 overflow-hidden"
+        style={{
+          backgroundImage: "url('/HomeBuddy-HEADER.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
         <div className="absolute top-10 right-0 w-48 h-48 rounded-full opacity-30 blur-3xl" style={{ background: "linear-gradient(135deg, #F4A261 0%, #E76F51 100%)" }} />
         <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full opacity-20 blur-3xl" style={{ background: "linear-gradient(135deg, #6A994E 0%, #4A90E2 100%)" }} />
 
@@ -214,15 +266,22 @@ export default function HomePage() {
               </AnimatedContent>
             </div>
             <AnimatedContent delay={0.2} distance={40} direction="horizontal" reverse>
-              <div className="relative w-full lg:w-80 xl:w-96 aspect-square rounded-2xl overflow-hidden border-2 shadow-2xl" style={{ borderColor: "#E8DCC4", backgroundColor: "#F5ECD4" }}>
-                <Image
-                  src="/HomeBuddy-HEADER.png"
-                  alt="HomeBuddy - Tools and supplies"
-                  fill
-                  className="object-cover"
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 24rem"
-                />
+              <div
+                className="hidden lg:flex w-full lg:w-80 xl:w-96 aspect-square rounded-2xl border-2 shadow-2xl bg-white/70 backdrop-blur-sm flex-col p-4"
+                style={{ borderColor: "#E8DCC4" }}
+              >
+                <div className="text-[10px] font-bold tracking-[0.2em] uppercase text-center mb-2" style={{ color: "#5A6C7D" }}>
+                  Recommended product of the day
+                </div>
+                <div className="flex-1 min-h-0">
+                  {dailyRecommendation ? (
+                    <ProductCard product={dailyRecommendation.product} categorySlug={dailyRecommendation.categorySlug} />
+                  ) : (
+                    <div className="w-full h-full grid place-items-center text-xs" style={{ color: "#8B9CAE" }}>
+                      Loading today&apos;s pick...
+                    </div>
+                  )}
+                </div>
               </div>
             </AnimatedContent>
           </div>
@@ -328,6 +387,31 @@ export default function HomePage() {
           <TrustedBrandsBlock />
         </div>
       </section>
+      <style jsx>{`
+        .homebuddy-page-banner {
+          font-family: "Segoe Script", "Comic Sans MS", "Bradley Hand", cursive, system-ui, -apple-system,
+            BlinkMacSystemFont, "Segoe UI", sans-serif;
+          font-size: clamp(3rem, 8vw, 5rem);
+          font-weight: 600;
+          letter-spacing: 0.08em;
+          text-transform: none;
+          color: #2d3e50;
+          text-align: center;
+          opacity: 0;
+          animation: homebuddy-page-fade 4.5s ease-in-out forwards;
+        }
+
+        @keyframes homebuddy-page-fade {
+          0% {
+            opacity: 0;
+            transform: translateY(-8px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
