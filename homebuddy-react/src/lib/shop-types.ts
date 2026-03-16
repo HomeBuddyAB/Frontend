@@ -34,6 +34,7 @@ export type SkuListItem = {
   color: string;
   size: string;
   price: number;
+  listPrice?: number;
   inStock: boolean;
   primaryImageUrl?: string;
   groupLink: string;

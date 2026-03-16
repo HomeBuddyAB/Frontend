@@ -11,6 +11,7 @@ import {
     FolderTree,
     Package,
     Grid3x3,
+    Percent,
     ChevronRight
 } from 'lucide-react';
 import AdminsManagement from './sections/AdminsManagement';
@@ -20,6 +21,7 @@ import OrdersManagement from './sections/OrdersManagement';
 import GroupsManagement from './sections/GroupsManagement';
 import VariantsManagement from './sections/VariantsManagement';
 import CategoriesManagement from './sections/CategoriesManagement';
+import DiscountsManagement from './sections/DiscountsManagement';
 import Dashboard from './sections/Dashboard';
 
 type Section =
@@ -30,6 +32,7 @@ type Section =
     | 'Orders'
     | 'Groups'
     | 'Variants'
+    | 'Discounts'
     | 'Categories';
 
 interface MenuItem {
@@ -83,6 +86,12 @@ const menuItems: MenuItem[] = [
         description: 'Manage product variants and inventory',
     },
     {
+        id: 'Discounts',
+        label: 'Kampanjer',
+        icon: Percent,
+        description: 'Rabattera eller avrabattera produktgrupper',
+    },
+    {
         id: 'Categories',
         label: 'Categories',
         icon: Grid3x3,
@@ -110,6 +119,8 @@ export default function AdminPanel() {
                 return <GroupsManagement />;
             case 'Variants':
                 return <VariantsManagement />;
+            case 'Discounts':
+                return <DiscountsManagement />;
             case 'Categories':
                 return <CategoriesManagement />;
             default:

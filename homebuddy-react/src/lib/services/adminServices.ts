@@ -36,6 +36,7 @@ export interface Item {
     color: string;
     size: string;
     price: number;
+    listPrice?: number;
     inStock: boolean;
     primaryImageUrl: string;
     groupLink: string;
@@ -107,6 +108,8 @@ export interface Group {
     isDeleted?: boolean;
     category?: Category;
     categoryId?: string | number;
+    /** True if any variant in this group has a list price (discount). */
+    hasDiscount?: boolean;
 }
 
 export interface Category {
@@ -255,6 +258,12 @@ export const groupService = {
         return apiClient.put<Group>(`/api/admin/Groups/${id}`, body);
     },
     delete: (id: number | string) => apiClient.delete(`/api/admin/Groups/${id}`),
+    /** Apply percentage discount to all variants in the group (1–99). */
+    applyDiscount: (groupId: string | number, discountPercent: number) =>
+        apiClient.post(`/api/admin/Groups/${groupId}/discount`, { discountPercent }),
+    /** Remove discount from all variants in the group (clears ListPrice). */
+    removeDiscount: (groupId: string | number) =>
+        apiClient.post(`/api/admin/Groups/${groupId}/discount/remove`, {}),
 };
 
 // ========== Variants Service ==========
@@ -342,6 +351,11 @@ export const itemService = {
         const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
         if (search?.trim()) params.set('Search', search.trim());
         return apiClient.get<PagedProductResponse>(`/api/products?${params.toString()}`);
+    },
+    getDeals: (page: number = 1, pageSize: number = 30, search?: string) => {
+        const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+        if (search?.trim()) params.set('Search', search.trim());
+        return apiClient.get<PagedProductResponse>(`/api/products/deals?${params.toString()}`);
     },
 };
 
