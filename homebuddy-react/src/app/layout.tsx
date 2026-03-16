@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Navbar from "@/components/navbar";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import LoadingBar from "./LoadingBar";
+import CookieBanner from "@/components/CookieBanner";
 // @ts-ignore: Allow side-effect import of global CSS without module declarations
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -59,6 +60,7 @@ export default function RootLayout({
               <Navbar />
               {children}
               <ConditionalFooter />
+              <CookieBanner />
               <ToastContainer
                 position="top-left"
                 autoClose={5000}
