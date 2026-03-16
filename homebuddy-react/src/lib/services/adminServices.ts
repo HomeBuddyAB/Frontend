@@ -115,6 +115,28 @@ export interface Category {
     slug: string;
 }
 
+// ========== Dashboard Types ==========
+export interface DashboardSummary {
+    orders: {
+        total: number;
+        totalRevenue: number;
+        today: number;
+    };
+    customers: {
+        total: number;
+    };
+    catalog: {
+        productGroups: number;
+        variants: number;
+        lowStockVariants: number;
+        outOfStockVariants: number;
+    };
+    reviews: {
+        total: number;
+        averageRating: number;
+    };
+}
+
 // ========== Helper function to build query strings ==========
 const buildQueryString = (params: Record<string, any>): string => {
     const queryParams = Object.entries(params)
@@ -327,6 +349,11 @@ export const itemService = {
 export const categoryService = {
     getAll: (page: number = 1) => apiClient.get<Category[]>(`/api/Categories?page=${page}`),
     getAllCount: () => apiClient.get<number>('/api/Categories/count'),
+};
+
+// ========== Dashboard Service ==========
+export const dashboardService = {
+    getSummary: () => apiClient.get<DashboardSummary>('/api/admin/dashboard/summary'),
 };
 
 // ========== OpenAI Service ==========

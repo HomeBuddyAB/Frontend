@@ -20,8 +20,10 @@ import OrdersManagement from './sections/OrdersManagement';
 import GroupsManagement from './sections/GroupsManagement';
 import VariantsManagement from './sections/VariantsManagement';
 import CategoriesManagement from './sections/CategoriesManagement';
+import Dashboard from './sections/Dashboard';
 
 type Section =
+    | 'Dashboard'
     | 'Admins'
     | 'Users'
     | 'Reviews'
@@ -38,6 +40,12 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
+    {
+        id: 'Dashboard',
+        label: 'Dashboard',
+        icon: ShoppingCart,
+        description: 'Key store metrics at a glance',
+    },
     {
         id: 'Admins',
         label: 'Admins',
@@ -83,11 +91,13 @@ const menuItems: MenuItem[] = [
 ];
 
 export default function AdminPanel() {
-    const [activeSection, setActiveSection] = useState<Section>('Admins');
+    const [activeSection, setActiveSection] = useState<Section>('Dashboard');
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     const renderSection = () => {
         switch (activeSection) {
+            case 'Dashboard':
+                return <Dashboard />;
             case 'Admins':
                 return <AdminsManagement />;
             case 'Users':
