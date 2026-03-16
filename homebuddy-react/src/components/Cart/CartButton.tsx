@@ -15,6 +15,11 @@ export default function CartButton() {
                     borderColor: "#362222",
                     backgroundColor: "#2B2B2B",
                 }}
+                type="button"
+                aria-label="Open shopping cart"
+                aria-haspopup="dialog"
+                aria-expanded={isOpen}
+                aria-controls="cart-drawer"
                 onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = "#362222";
                     e.currentTarget.style.borderColor = "#8B4545";

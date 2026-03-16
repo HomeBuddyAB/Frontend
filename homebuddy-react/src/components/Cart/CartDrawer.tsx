@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useCart } from "@/contexts/CartContext";
 import Image from "next/image";
@@ -23,6 +23,8 @@ export default function CartDrawer({
     totalPrice,
     clearCart,
   } = useCart();
+  const desktopDialogRef = useRef<HTMLDivElement | null>(null);
+  const mobileDialogRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -47,6 +49,31 @@ export default function CartDrawer({
       analytics.viewCart(totalValue, items.length);
     }
   }, [isOpen]);
+
+  // Focus the first focusable element when the drawer opens and close on Escape
+  useEffect(() => {
+    if (!mounted || !isOpen) return;
+
+    const dialog = desktopDialogRef.current || mobileDialogRef.current;
+    if (dialog) {
+      const focusable = dialog.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      focusable?.focus();
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mounted, isOpen, onClose]);
 
   if (!mounted) return null;
 
@@ -75,7 +102,12 @@ export default function CartDrawer({
           backgroundColor: "#1a1a1a",
           borderLeft: "2px solid #362222",
         }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cart-drawer-title"
         aria-hidden={!isOpen}
+        id="cart-drawer"
+        ref={desktopDialogRef}
       >
         <div className="h-full flex flex-col">
           {/* Header */}
@@ -85,7 +117,9 @@ export default function CartDrawer({
           >
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-white">YOUR CART</h2>
+                <h2 id="cart-drawer-title" className="text-2xl font-bold text-white">
+                  YOUR CART
+                </h2>
                 <p className="text-gray-400 text-sm mt-1">
                   {totalItems} {totalItems === 1 ? "item" : "items"}
                 </p>
@@ -93,6 +127,8 @@ export default function CartDrawer({
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-white transition-colors p-2"
+                type="button"
+                aria-label="Close cart"
               >
                 <svg
                   className="w-6 h-6"
@@ -183,6 +219,8 @@ export default function CartDrawer({
                                 updateQuantity(item.sku, item.quantity - 1)
                               )}
                               className="w-6 h-6 flex items-center justify-center text-white border border-gray-600 hover:border-gray-400 transition-colors"
+                              type="button"
+                              aria-label={`Decrease quantity of ${item.name}`}
                             >
                               -
                             </button>
@@ -200,6 +238,8 @@ export default function CartDrawer({
                                 updateQuantity(item.sku, item.quantity + 1);
                               }}
                               className="w-6 h-6 flex items-center justify-center text-white border border-gray-600 hover:border-gray-400 transition-colors"
+                              type="button"
+                              aria-label={`Increase quantity of ${item.name}`}
                             >
                               +
                             </button>
@@ -219,6 +259,8 @@ export default function CartDrawer({
                           removeItem(item.sku);
                         }}
                         className="text-gray-400 hover:text-red-400 transition-colors"
+                        type="button"
+                        aria-label={`Remove ${item.name} from cart`}
                       >
                         <svg
                           className="w-5 h-5"
@@ -246,6 +288,7 @@ export default function CartDrawer({
                       clearCart();
                     }}
                     className="text-sm text-gray-400 hover:text-red-400 transition-colors mt-4"
+                    type="button"
                   >
                     Clear Cart
                   </button>
@@ -275,6 +318,7 @@ export default function CartDrawer({
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.backgroundColor = "#8B4545")
                 }
+                type="button"
                 onClick={handleCheckout}
               >
                 CHECKOUT
@@ -294,7 +338,11 @@ export default function CartDrawer({
           borderTop: "2px solid #362222",
           maxHeight: "85vh",
         }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cart-drawer-title-mobile"
         aria-hidden={!isOpen}
+        ref={mobileDialogRef}
       >
         <div className="h-full flex flex-col">
           <div className="pt-3 pb-2 flex justify-center">
@@ -310,7 +358,9 @@ export default function CartDrawer({
           >
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">YOUR CART</h2>
+                <h2 id="cart-drawer-title-mobile" className="text-xl font-bold text-white">
+                  YOUR CART
+                </h2>
                 <p className="text-gray-400 text-sm mt-1">
                   {totalItems} {totalItems === 1 ? "item" : "items"}
                 </p>
@@ -318,6 +368,8 @@ export default function CartDrawer({
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-white transition-colors p-2"
+                type="button"
+                aria-label="Close cart"
               >
                 <svg
                   className="w-5 h-5"
@@ -384,6 +436,8 @@ export default function CartDrawer({
                               updateQuantity(item.sku, item.quantity - 1)
                             }
                             className="w-6 h-6 flex items-center justify-center text-white border border-gray-600"
+                            type="button"
+                            aria-label={`Decrease quantity of ${item.name}`}
                           >
                             -
                           </button>
@@ -395,6 +449,8 @@ export default function CartDrawer({
                               updateQuantity(item.sku, item.quantity + 1)
                             }
                             className="w-6 h-6 flex items-center justify-center text-white border border-gray-600"
+                            type="button"
+                            aria-label={`Increase quantity of ${item.name}`}
                           >
                             +
                           </button>
@@ -413,6 +469,8 @@ export default function CartDrawer({
                         removeItem(item.sku);
                       }}
                       className="text-gray-400"
+                      type="button"
+                      aria-label={`Remove ${item.name} from cart`}
                     >
                       <svg
                         className="w-4 h-4"
@@ -448,6 +506,7 @@ export default function CartDrawer({
               <button
                 className="cursor-pointer w-full py-3 text-white font-bold rounded transition-all duration-300 active:scale-95"
                 style={{ backgroundColor: "#8B4545" }}
+                type="button"
                 onClick={handleCheckout}
               >
                 CHECKOUT

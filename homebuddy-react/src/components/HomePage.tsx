@@ -181,7 +181,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#FAF3E0" }}>
+    <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#FAF3E0" }}>
       {/* HomeBuddy top banner */}
       <section className="w-full pt-10 pb-4 flex items-center justify-center">
         <h1 className="homebuddy-page-banner">HomeBuddy</h1>
@@ -412,6 +412,6 @@ export default function HomePage() {
           }
         }
       `}</style>
-    </div>
+    </main>
   );
 }
