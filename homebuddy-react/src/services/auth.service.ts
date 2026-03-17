@@ -132,4 +132,23 @@ export const authService = {
             localStorage.removeItem('accessToken');
         }
     },
+
+    async forgotPassword(email: string): Promise<ApiResponse<{ message: string }>> {
+        try {
+            return await apiClient.post<{ message: string }>('/api/auth/forgot-password', { email });
+        } catch (error: any) {
+            return { error: error.message || 'Failed to request password reset', status: 500 };
+        }
+    },
+
+    async resetPassword(token: string, newPassword: string): Promise<ApiResponse<{ message: string }>> {
+        try {
+            return await apiClient.post<{ message: string }>('/api/auth/reset-password', {
+                token,
+                newPassword,
+            });
+        } catch (error: any) {
+            return { error: error.message || 'Failed to reset password', status: 500 };
+        }
+    },
 };

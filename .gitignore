@@ -48,3 +48,6 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+
+# Local clone of backend repo (separate git repo)
+backend/

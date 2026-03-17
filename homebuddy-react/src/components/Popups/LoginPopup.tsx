@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
+import { useRouter } from "next/navigation";
 
 function LoginPopup({ onSignupClick }: { onSignupClick: () => void }) {
     const [showPassword, setShowPassword] = useState(false);
@@ -11,6 +12,7 @@ function LoginPopup({ onSignupClick }: { onSignupClick: () => void }) {
     const [error, setError] = useState('');
     const { login } = useAuth();
     const { getGuestCartJson, replaceWithMergedCart } = useCart();
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -159,6 +161,11 @@ function LoginPopup({ onSignupClick }: { onSignupClick: () => void }) {
                 <button
                     type="button"
                     className="hover:text-gray-400 transition-colors cursor-pointer"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        router.push("/forgot-password");
+                    }}
                 >
                     Forgot password?
                 </button>

@@ -152,8 +152,7 @@ export default function ShopLanding() {
         )}
 
         {/* Product Grid - Clean & Modern */}
-        {items.length > 0 && (
-          <section>
+        <section>
             {/* Search bar */}
             <form onSubmit={handleSearchSubmit} className="mb-8">
               <div className="flex flex-col sm:flex-row gap-3 max-w-xl">
@@ -289,8 +288,7 @@ export default function ShopLanding() {
               totalCount={totalCount}
               pageSize={ITEMS_PER_PAGE}
             />
-          </section>
-        )}
+        </section>
       </div>
     </main>
   );
