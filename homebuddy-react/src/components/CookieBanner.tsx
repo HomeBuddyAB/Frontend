@@ -78,14 +78,14 @@ export default function CookieBanner() {
             <button
               type="button"
               onClick={handleReject}
-              className="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold border border-[#423F3E] text-gray-200 hover:bg-[#211111] transition-colors"
+              className="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold border border-[#423F3E] text-gray-200 hover:bg-[#140909] transition-colors cursor-pointer"
             >
               Only necessary
             </button>
             <button
               type="button"
               onClick={handleAccept}
-              className="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-black bg-[#F4A261] hover:bg-[#f28a33] transition-colors"
+              className="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-black bg-[#F4A261] hover:bg-[#d86f1a] transition-colors cursor-pointer"
             >
               Accept all
             </button>

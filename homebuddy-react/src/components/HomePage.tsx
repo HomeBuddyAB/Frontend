@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import SplitText from "./SplitText";
 import AnimatedContent from "./AnimatedContent";
@@ -117,6 +117,181 @@ function TrustedBrandsBlock() {
             <span className="font-bold text-sm text-center">{brand}</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function HorizontalDragScroller({
+  children,
+  ariaLabel,
+}: {
+  children: React.ReactNode;
+  ariaLabel: string;
+}) {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+  const justDraggedRef = useRef(false);
+  const drag = useRef({
+    active: false,
+    startX: 0,
+    startScrollLeft: 0,
+    moved: false,
+    pointerId: -1,
+    pointerType: "mouse" as string,
+    captured: false,
+  });
+
+  const updateEdges = () => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const left = el.scrollLeft;
+    setCanLeft(left > 2);
+    setCanRight(left < max - 2);
+  };
+
+  useEffect(() => {
+    updateEdges();
+    const el = viewportRef.current;
+    if (!el) return;
+    const onScroll = () => updateEdges();
+    const onResize = () => updateEdges();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  const scrollByCards = (dir: -1 | 1) => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const amount = Math.max(240, Math.floor(el.clientWidth * 0.8));
+    el.scrollBy({ left: dir * amount, behavior: "smooth" });
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    const el = viewportRef.current;
+    if (!el) return;
+    drag.current.active = true;
+    drag.current.pointerId = e.pointerId;
+    drag.current.startX = e.clientX;
+    drag.current.startScrollLeft = el.scrollLeft;
+    drag.current.moved = false;
+    drag.current.pointerType = (e.pointerType || "mouse") as string;
+    drag.current.captured = false;
+    justDraggedRef.current = false;
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    const el = viewportRef.current;
+    if (!el) return;
+    if (!drag.current.active) return;
+    const dx = e.clientX - drag.current.startX;
+    const threshold = drag.current.pointerType === "touch" ? 10 : 6;
+
+    if (!drag.current.moved) {
+      if (Math.abs(dx) <= threshold) return;
+      drag.current.moved = true;
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        drag.current.captured = true;
+      } catch {
+        // ignore
+      }
+    }
+
+    el.scrollLeft = drag.current.startScrollLeft - dx;
+  };
+
+  const onPointerUpOrCancel = (e: React.PointerEvent) => {
+    if (!drag.current.active) return;
+    drag.current.active = false;
+    if (drag.current.moved) {
+      justDraggedRef.current = true;
+      window.setTimeout(() => {
+        justDraggedRef.current = false;
+      }, 350);
+    }
+    try {
+      if (drag.current.captured) {
+        (e.currentTarget as HTMLElement).releasePointerCapture(drag.current.pointerId);
+      }
+    } catch {
+      // ignore
+    }
+    drag.current.moved = false;
+    drag.current.captured = false;
+  };
+
+  const onClickCapture = (e: React.MouseEvent) => {
+    if (justDraggedRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  return (
+    <div className="relative">
+      {canLeft && (
+        <div
+          className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 sm:w-14"
+          style={{ background: "linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%)" }}
+          aria-hidden="true"
+        />
+      )}
+      {canRight && (
+        <div
+          className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 sm:w-14"
+          style={{ background: "linear-gradient(270deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%)" }}
+          aria-hidden="true"
+        />
+      )}
+
+      {canLeft && (
+        <button
+          type="button"
+          aria-label="Scroll left"
+          onClick={() => scrollByCards(-1)}
+          className="absolute left-1 top-1/2 -translate-y-1/2 z-10 hidden sm:inline-flex items-center justify-center w-9 h-9 rounded-full border-2 shadow-md bg-white/90 backdrop-blur transition-colors"
+          style={{ borderColor: "#E8DCC4", color: "#2D3E50" }}
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+      )}
+      {canRight && (
+        <button
+          type="button"
+          aria-label="Scroll right"
+          onClick={() => scrollByCards(1)}
+          className="absolute right-1 top-1/2 -translate-y-1/2 z-10 hidden sm:inline-flex items-center justify-center w-9 h-9 rounded-full border-2 shadow-md bg-white/90 backdrop-blur transition-colors"
+          style={{ borderColor: "#E8DCC4", color: "#2D3E50" }}
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      )}
+
+      <div
+        ref={viewportRef}
+        className="flex gap-2 sm:gap-3 overflow-x-auto overflow-y-hidden pb-1 scroll-smooth scrollbar-thin min-h-0 flex-1 max-h-full select-none"
+        style={{
+          scrollbarWidth: "thin",
+          WebkitOverflowScrolling: "touch",
+          cursor: drag.current.active ? "grabbing" : "grab",
+          touchAction: "pan-y",
+        }}
+        role="region"
+        aria-label={ariaLabel}
+        onClickCapture={onClickCapture}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUpOrCancel}
+        onPointerCancel={onPointerUpOrCancel}
+      >
+        {children}
       </div>
     </div>
   );
@@ -344,13 +519,7 @@ export default function HomePage() {
                         <ArrowRight className="w-3 h-3" />
                       </Link>
                     </div>
-                    <div
-                      className="flex gap-2 sm:gap-3 overflow-x-auto overflow-y-hidden pb-1 scroll-smooth scrollbar-thin min-h-0 flex-1 max-h-full"
-                      style={{
-                        scrollbarWidth: "thin",
-                        WebkitOverflowScrolling: "touch",
-                      }}
-                    >
+                    <HorizontalDragScroller ariaLabel={`${row.name} products`}>
                       {row.products.length === 0 ? (
                         <div className="min-w-[96px] rounded-lg border-2 p-2 text-center shrink-0" style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}>
                           <p className="text-xs" style={{ color: "#5A6C7D" }}>No products yet.</p>
@@ -368,7 +537,7 @@ export default function HomePage() {
                           </div>
                         ))
                       )}
-                    </div>
+                    </HorizontalDragScroller>
                   </div>
                   </AnimatedContent>
                 </div>
