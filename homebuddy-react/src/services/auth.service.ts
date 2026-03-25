@@ -136,19 +136,19 @@ export const authService = {
         }
     },
 
-  async forgotPassword(email: string): Promise<ApiResponse<{ token?: string }>> {
-    try {
-      return await apiClient.post<{ token?: string }>("/api/auth/forgot-password", { email });
-    } catch (error: any) {
-      return { error: error.message || "Request failed", status: 500 };
-    }
-  },
+    async forgotPassword(email: string): Promise<ApiResponse<{ token?: string }>> {
+        try {
+            return await apiClient.post<{ token?: string }>("/api/auth/forgot-password", { email });
+        } catch (error: any) {
+            return { error: error.message || "Failed to request password reset", status: 500 };
+        }
+    },
 
-  async resetPassword(email: string, token: string, newPassword: string): Promise<ApiResponse<void>> {
-    try {
-      return await apiClient.post<void>("/api/auth/reset-password", { email, token, newPassword });
-    } catch (error: any) {
-      return { error: error.message || "Request failed", status: 500 };
-    }
-  },
+    async resetPassword(email: string, token: string, newPassword: string): Promise<ApiResponse<void>> {
+        try {
+            return await apiClient.post<void>("/api/auth/reset-password", { email, token, newPassword });
+        } catch (error: any) {
+            return { error: error.message || "Failed to reset password", status: 500 };
+        }
+    },
 };

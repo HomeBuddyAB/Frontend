@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import SplitText from "./SplitText";
 import AnimatedContent from "./AnimatedContent";
@@ -161,13 +161,6 @@ function PromoBanner({
   );
 }
 
-function useIsomorphicLayoutEffectSafe(fn: () => void, deps: any[]) {
-  // In Next app router client components, useEffect is enough for DOM.
-  // This is just to keep intent explicit and avoid SSR warnings.
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(fn, deps);
-}
-
 function HorizontalDragScroller({
   children,
   ariaLabel,
@@ -198,7 +191,7 @@ function HorizontalDragScroller({
     setCanRight(left < max - 2);
   };
 
-  useIsomorphicLayoutEffectSafe(() => {
+  useEffect(() => {
     updateEdges();
     const el = viewportRef.current;
     if (!el) return;
