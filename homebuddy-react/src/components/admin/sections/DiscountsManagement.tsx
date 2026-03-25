@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { groupService, Group } from '@/lib/services/adminServices';
 import { toast } from 'react-toastify';
-import { Percent, TagOff, Loader2, X } from 'lucide-react';
+import { Percent, Tag, Loader2, X } from 'lucide-react';
 
 export default function DiscountsManagement() {
     const [groups, setGroups] = useState<Group[]>([]);
@@ -163,7 +163,7 @@ export default function DiscountsManagement() {
                                                     disabled={isRemoving === String(g.id)}
                                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3a3a3a] hover:bg-[#4a4a4a] text-gray-300 text-sm transition disabled:opacity-50"
                                                 >
-                                                    {isRemoving === String(g.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <TagOff className="w-4 h-4" />}
+                                                    {isRemoving === String(g.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Tag className="w-4 h-4" />}
                                                     Avrabattera
                                                 </button>
                                             )}

@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import SplitText from "./SplitText";
 import AnimatedContent from "./AnimatedContent";
@@ -117,6 +117,234 @@ function TrustedBrandsBlock() {
             <span className="font-bold text-sm text-center">{brand}</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function PromoBanner({
+  href,
+  imageSrc,
+  imageAlt,
+  dropdownText,
+}: {
+  href: string;
+  imageSrc: string;
+  imageAlt: string;
+  dropdownText: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group block w-full cursor-pointer rounded-2xl"
+      aria-label={dropdownText}
+    >
+      <div className="overflow-hidden rounded-2xl border-2 shadow-md transition-all duration-300 group-hover:shadow-xl" style={{ borderColor: "#E8DCC4" }}>
+        <div className="overflow-hidden">
+          <img
+            src={imageSrc}
+            alt={imageAlt}
+            className="w-full h-auto object-cover transition-transform duration-300 ease-out group-hover:scale-[1.04]"
+            loading="lazy"
+          />
+        </div>
+        <div
+          className="max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:max-h-16 group-hover:opacity-100"
+          style={{ backgroundColor: "#F4A261" }}
+        >
+          <div className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white text-center">
+            {dropdownText}
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function useIsomorphicLayoutEffectSafe(fn: () => void, deps: any[]) {
+  // In Next app router client components, useEffect is enough for DOM.
+  // This is just to keep intent explicit and avoid SSR warnings.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(fn, deps);
+}
+
+function HorizontalDragScroller({
+  children,
+  ariaLabel,
+}: {
+  children: React.ReactNode;
+  ariaLabel: string;
+}) {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+  const justDraggedRef = useRef(false);
+  const drag = useRef({
+    active: false,
+    startX: 0,
+    startScrollLeft: 0,
+    moved: false,
+    pointerId: -1,
+    pointerType: "mouse" as string,
+    captured: false,
+  });
+
+  const updateEdges = () => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const left = el.scrollLeft;
+    setCanLeft(left > 2);
+    setCanRight(left < max - 2);
+  };
+
+  useIsomorphicLayoutEffectSafe(() => {
+    updateEdges();
+    const el = viewportRef.current;
+    if (!el) return;
+    const onScroll = () => updateEdges();
+    const onResize = () => updateEdges();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  const scrollByCards = (dir: -1 | 1) => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const amount = Math.max(240, Math.floor(el.clientWidth * 0.8));
+    el.scrollBy({ left: dir * amount, behavior: "smooth" });
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    const el = viewportRef.current;
+    if (!el) return;
+    drag.current.active = true;
+    drag.current.pointerId = e.pointerId;
+    drag.current.startX = e.clientX;
+    drag.current.startScrollLeft = el.scrollLeft;
+    drag.current.moved = false;
+    drag.current.pointerType = (e.pointerType || "mouse") as string;
+    drag.current.captured = false;
+    justDraggedRef.current = false;
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    const el = viewportRef.current;
+    if (!el) return;
+    if (!drag.current.active) return;
+    const dx = e.clientX - drag.current.startX;
+    const threshold = drag.current.pointerType === "touch" ? 10 : 6;
+
+    // Don't scroll at all until we're confidently dragging.
+    if (!drag.current.moved) {
+      if (Math.abs(dx) <= threshold) return;
+      drag.current.moved = true;
+      // Capture pointer only once we know it's a drag; otherwise taps never reach links.
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        drag.current.captured = true;
+      } catch {
+        // ignore
+      }
+    }
+
+    el.scrollLeft = drag.current.startScrollLeft - dx;
+  };
+
+  const onPointerUpOrCancel = (e: React.PointerEvent) => {
+    if (!drag.current.active) return;
+    drag.current.active = false;
+    if (drag.current.moved) {
+      // Prevent the "pointerup -> click" that follows a drag (especially on mobile).
+      justDraggedRef.current = true;
+      window.setTimeout(() => {
+        justDraggedRef.current = false;
+      }, 350);
+    }
+    try {
+      if (drag.current.captured) {
+        (e.currentTarget as HTMLElement).releasePointerCapture(drag.current.pointerId);
+      }
+    } catch {
+      // ignore
+    }
+    // Reset moved so future taps are clickable.
+    drag.current.moved = false;
+    drag.current.captured = false;
+  };
+
+  const onClickCapture = (e: React.MouseEvent) => {
+    // If user dragged, cancel link/button activation inside the scroller.
+    if (justDraggedRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  return (
+    <div className="relative">
+      {/* Fade edges */}
+      {canLeft && (
+        <div
+          className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 sm:w-14"
+          style={{ background: "linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%)" }}
+          aria-hidden="true"
+        />
+      )}
+      {canRight && (
+        <div
+          className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 sm:w-14"
+          style={{ background: "linear-gradient(270deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%)" }}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Arrow buttons */}
+      {canLeft && (
+        <button
+          type="button"
+          aria-label="Scroll left"
+          onClick={() => scrollByCards(-1)}
+          className="absolute left-1 top-1/2 -translate-y-1/2 z-10 hidden sm:inline-flex items-center justify-center w-9 h-9 rounded-full border-2 shadow-md bg-white/90 backdrop-blur transition-colors"
+          style={{ borderColor: "#E8DCC4", color: "#2D3E50" }}
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+      )}
+      {canRight && (
+        <button
+          type="button"
+          aria-label="Scroll right"
+          onClick={() => scrollByCards(1)}
+          className="absolute right-1 top-1/2 -translate-y-1/2 z-10 hidden sm:inline-flex items-center justify-center w-9 h-9 rounded-full border-2 shadow-md bg-white/90 backdrop-blur transition-colors"
+          style={{ borderColor: "#E8DCC4", color: "#2D3E50" }}
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      )}
+
+      <div
+        ref={viewportRef}
+        className="flex gap-2 sm:gap-3 overflow-x-auto overflow-y-hidden pb-1 scroll-smooth scrollbar-thin min-h-0 flex-1 max-h-full select-none"
+        style={{
+          scrollbarWidth: "thin",
+          WebkitOverflowScrolling: "touch",
+          cursor: drag.current.active ? "grabbing" : "grab",
+          touchAction: "pan-y", // allow vertical page scroll; horizontal handled by us
+        }}
+        role="region"
+        aria-label={ariaLabel}
+        onClickCapture={onClickCapture}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUpOrCancel}
+        onPointerCancel={onPointerUpOrCancel}
+      >
+        {children}
       </div>
     </div>
   );
@@ -288,6 +516,18 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Top catalogue banner under hero */}
+      <section className="px-6 py-6" style={{ backgroundColor: "#FAF3E0" }}>
+        <div className="max-w-7xl mx-auto">
+          <PromoBanner
+            href="/shop"
+            imageSrc="/Top_Banner.png"
+            imageAlt="Top banner linking to full catalogue"
+            dropdownText="View full catalogue"
+          />
+        </div>
+      </section>
+
       {/* Category rows: all 4 rows visible, no height cap. Each row clips its own content so no bleed. */}
       <section
         className="px-6 pt-4 pb-6 box-border"
@@ -344,13 +584,7 @@ export default function HomePage() {
                         <ArrowRight className="w-3 h-3" />
                       </Link>
                     </div>
-                    <div
-                      className="flex gap-2 sm:gap-3 overflow-x-auto overflow-y-hidden pb-1 scroll-smooth scrollbar-thin min-h-0 flex-1 max-h-full"
-                      style={{
-                        scrollbarWidth: "thin",
-                        WebkitOverflowScrolling: "touch",
-                      }}
-                    >
+                    <HorizontalDragScroller ariaLabel={`${row.name} products`}>
                       {row.products.length === 0 ? (
                         <div className="min-w-[96px] rounded-lg border-2 p-2 text-center shrink-0" style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}>
                           <p className="text-xs" style={{ color: "#5A6C7D" }}>No products yet.</p>
@@ -368,13 +602,25 @@ export default function HomePage() {
                           </div>
                         ))
                       )}
-                    </div>
+                    </HorizontalDragScroller>
                   </div>
                   </AnimatedContent>
                 </div>
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Sales banner under categories */}
+      <section className="px-6 py-6" style={{ backgroundColor: "#FFFFFF" }}>
+        <div className="max-w-7xl mx-auto">
+          <PromoBanner
+            href="/shop?sort=discount_desc"
+            imageSrc="/Sales_Banner.png"
+            imageAlt="Sales banner linking to items on sale"
+            dropdownText="View items on sale"
+          />
         </div>
       </section>
 

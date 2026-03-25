@@ -4,12 +4,12 @@ import Navbar from "@/components/navbar";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import LoadingBar from "./LoadingBar";
 import CookieBanner from "@/components/CookieBanner";
+import AnalyticsGate from "@/components/AnalyticsGate";
 // @ts-ignore: Allow side-effect import of global CSS without module declarations
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Bounce, ToastContainer } from "react-toastify";
 import { CartProvider } from "@/contexts/CartContext";
-import { GoogleAnalytics } from "@next/third-parties/google";
 import { Suspense } from "react";
 
 const geistSans = Geist({
@@ -23,8 +23,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HomeBuddy - Alternative Fashion",
-  description: "Premium biker, emo, and leather clothing",
+  title: "HomeBuddy - Make Your Home You",
+  description: "Tools, materials, and home essentials to make your home you.",
 };
 
 // lets disable footer for specific pages like admin and checkout
@@ -77,7 +77,7 @@ export default function RootLayout({
             </Suspense>
           </CartProvider>
         </AuthProvider>
-        <GoogleAnalytics gaId={process.env.GA_MEASUREMENT_ID || ""} />
+        <AnalyticsGate />
       </body>
     </html >
   );

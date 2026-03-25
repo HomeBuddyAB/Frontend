@@ -113,14 +113,17 @@ export const authService = {
     // Check current auth status and get user with role
     async checkAuth(): Promise<ApiResponse<UserFromToken>> {
         try {
-            if (typeof window !== 'undefined') {
-                const token = localStorage.getItem('accessToken');
-                if (token) {
-                    const user = extractUserFromToken(token);
-                    return { data: user, status: 200 };
-                }
-            }
-            return { error: 'No token found', status: 401 };
+      // Server-validated identity. Requires Authorization header (apiClient interceptor attaches it).
+      const me = await apiClient.get<{ id: number; email: string; role?: string }>("/api/auth/me");
+      if (me.error || !me.data) {
+        // If token is invalid/expired, clear it to avoid stuck sessions.
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("accessToken");
+        }
+        return { error: me.error || "Not authenticated", status: me.status || 401 };
+      }
+
+      return { data: { id: me.data.id, email: me.data.email, role: me.data.role }, status: me.status || 200 };
         } catch (error: any) {
             return { error: error.message || 'Auth check failed', status: 500 };
         }
@@ -132,4 +135,20 @@ export const authService = {
             localStorage.removeItem('accessToken');
         }
     },
+
+  async forgotPassword(email: string): Promise<ApiResponse<{ token?: string }>> {
+    try {
+      return await apiClient.post<{ token?: string }>("/api/auth/forgot-password", { email });
+    } catch (error: any) {
+      return { error: error.message || "Request failed", status: 500 };
+    }
+  },
+
+  async resetPassword(email: string, token: string, newPassword: string): Promise<ApiResponse<void>> {
+    try {
+      return await apiClient.post<void>("/api/auth/reset-password", { email, token, newPassword });
+    } catch (error: any) {
+      return { error: error.message || "Request failed", status: 500 };
+    }
+  },
 };

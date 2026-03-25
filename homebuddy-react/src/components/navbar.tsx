@@ -3,7 +3,7 @@
 import StaggeredMenu, { StaggeredMenuItem, StaggeredMenuSocialItem } from "./StaggeredMenu";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 
@@ -25,10 +25,13 @@ const socialItems: StaggeredMenuSocialItem[] = [
 
 export default function Navbar() {
     const router = useRouter();
+    const pathname = usePathname();
     const [menuOpen, setMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const overlayHandlerRef = useRef<(() => void) | null>(null);
     const { isAuthenticated, setShowLoginPopup } = useAuth();
+
+    const hideHeaderSearch = pathname === "/";
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -123,17 +126,19 @@ export default function Navbar() {
                 {/* 2. Search + Menu Toggle on the right */}
                 <div className="flex items-center gap-3 sm:gap-4 pointer-events-auto">
                     {/* Search bar - navigates to /shop?search=... */}
-                    <form onSubmit={handleSearchSubmit} className="hidden sm:block flex-1 max-w-[200px] lg:max-w-[240px]">
-                        <input
-                            type="search"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search products..."
-                            className="w-full px-3 py-2 rounded-lg border-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F4A261]"
-                            style={{ borderColor: "#E8DCC4", color: "#2D3E50", backgroundColor: "#FFFFFF" }}
-                            aria-label="Search products"
-                        />
-                    </form>
+                    {!hideHeaderSearch && (
+                        <form onSubmit={handleSearchSubmit} className="hidden sm:block flex-1 max-w-[200px] lg:max-w-[240px]">
+                            <input
+                                type="search"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search products..."
+                                className="w-full px-3 py-2 rounded-lg border-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F4A261]"
+                                style={{ borderColor: "#E8DCC4", color: "#2D3E50", backgroundColor: "#FFFFFF" }}
+                                aria-label="Search products"
+                            />
+                        </form>
+                    )}
 
                     {/* Favorites button (header access to wishlist) */}
                     <button
