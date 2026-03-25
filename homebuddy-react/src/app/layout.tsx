@@ -23,8 +23,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HomeBuddy - Alternative Fashion",
-  description: "Premium biker, emo, and leather clothing",
+  title: "HomeBuddy - Make Your Home You",
+  description: "Tools, materials, and home essentials to make your home you.",
 };
 
 // lets disable footer for specific pages like admin and checkout

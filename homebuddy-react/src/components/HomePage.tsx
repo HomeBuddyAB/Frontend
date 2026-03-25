@@ -122,6 +122,45 @@ function TrustedBrandsBlock() {
   );
 }
 
+function PromoBanner({
+  href,
+  imageSrc,
+  imageAlt,
+  dropdownText,
+}: {
+  href: string;
+  imageSrc: string;
+  imageAlt: string;
+  dropdownText: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group block w-full cursor-pointer rounded-2xl"
+      aria-label={dropdownText}
+    >
+      <div className="overflow-hidden rounded-2xl border-2 shadow-md transition-all duration-300 group-hover:shadow-xl" style={{ borderColor: "#E8DCC4" }}>
+        <div className="overflow-hidden">
+          <img
+            src={imageSrc}
+            alt={imageAlt}
+            className="w-full h-auto object-cover transition-transform duration-300 ease-out group-hover:scale-[1.04]"
+            loading="lazy"
+          />
+        </div>
+        <div
+          className="max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:max-h-16 group-hover:opacity-100"
+          style={{ backgroundColor: "#F4A261" }}
+        >
+          <div className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white text-center">
+            {dropdownText}
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 function HorizontalDragScroller({
   children,
   ariaLabel,
@@ -463,6 +502,18 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Top catalogue banner under hero */}
+      <section className="px-6 py-6" style={{ backgroundColor: "#FAF3E0" }}>
+        <div className="max-w-7xl mx-auto">
+          <PromoBanner
+            href="/shop"
+            imageSrc="/Top_Banner.png"
+            imageAlt="Top banner linking to full catalogue"
+            dropdownText="View full catalogue"
+          />
+        </div>
+      </section>
+
       {/* Category rows: all 4 rows visible, no height cap. Each row clips its own content so no bleed. */}
       <section
         className="px-6 pt-4 pb-6 box-border"
@@ -544,6 +595,18 @@ export default function HomePage() {
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Sales banner under categories */}
+      <section className="px-6 py-6" style={{ backgroundColor: "#FFFFFF" }}>
+        <div className="max-w-7xl mx-auto">
+          <PromoBanner
+            href="/shop?sort=discount_desc"
+            imageSrc="/Sales_Banner.png"
+            imageAlt="Sales banner linking to items on sale"
+            dropdownText="View items on sale"
+          />
         </div>
       </section>
 
