@@ -1,16 +1,82 @@
-HomeBuddy-React (Frontend) – Huvudfunktioner och Funktionalitet
+# HomeBuddy React (Frontend)
 
-Next.js E-handelsfrontend: En Next.js 13-applikation (TypeScript) som fungerar som kundgränssnitt och adminpanel. Webbplatsen är mobilanpassad och dynamisk, där användare kan bläddra bland produkter per kategori, se produktdetaljer, hantera varukorg och slutföra köp. Startsidan lyfter fram produktkategorier (Topp, Byxor, Skor, Accessoarer) och presenterar utvalda produkter visuellt. Besökare kan klicka på “Shop Now” för att se alla produkter eller filtrera per kategori.
+Next.js (App Router) frontend för HomeBuddy e‑handel. Innehåller både kundsidor och admin‑UI.
 
-Produktvisning & Detaljsidor: Under sektionen /shop kan användare bläddra bland produkter efter kategori och se listor över produktvarianter med information såsom pris, färg och bild. Varje produkt har en egen detaljsida (URL innehåller kategori och produkt-slug) som visar produktgruppens namn, beskrivning, tillgängliga färger/storlekar (med facetträkning), prisspann samt bildgalleri för vald variant. Användaren kan välja olika varianter (t.ex. färg/storlek) för att uppdatera vyn. Sidan innehåller också kundrecensioner samt en AI-genererad sammanfattning av recensionerna för snabb överblick.
+## Snabbstart (lokalt)
 
-Varukorg & Kassafunktion: Inkluderar en ihållande varukorg (åtkomlig via en “cart drawer”) där användare kan lägga till varianter och justera kvantiteter. Varukorgen synkroniseras med backend (sparas även till användarens konto) och uppdaterar lagerstatus i realtid. Kassasidan låter användare granska sina varor och slutföra köp. Vid beställning skickas data till API:et och användaren får en bekräftelse med ordernummer. Inloggade användare kan även hämta tidigare beställningar med e-post eller ordernummer.
+1. Installera dependencies:
 
-Användarkonton & Inloggning: Stödjer kundregistrering och inloggning via popup-modal. Nya användare kan registrera sig med e-post/lösenord och loggas in automatiskt (JWT sparas i localStorage). Vanliga användare har rollen “User” medan administratörer har rollen “Admin”, vilket avgörs via JWT-claims. Appen särskiljer dessa roller och har en dedikerad inloggningssida för administratörer (/admin/login) för att få tillgång till adminfunktioner.
+```bash
+npm install
+```
 
-Adminpanel: När en administratör loggar in visas en fullständig adminpanel med sidomeny för systemhantering. Panelen innehåller sektioner för: Admin Users (hantera adminkonton), Users (se och hantera kundkonton), Reviews (moderera recensioner), Orders (spåra och uppdatera ordrar), Product Groups (organisera och redigera produktgrupper), Variants (hantera individuella varianter och lager), och Categories (visa produktkategorier). Genom denna panel kan adminanvändare utföra CRUD-operationer via HomeBuddyDB-API: exempelvis skapa nya produkter/varianter, ladda upp bilder, justera lager, uppdatera orderstatus och hantera konton. UI:t använder formulär och tabeller som anropar motsvarande API-endpoints via en apiClient.
+2. Sätt API‑URL (exempel):
+- `NEXT_PUBLIC_API_URL=https://localhost:7039`
 
-Interaktiv UX och Visuell Design: Butiken har en modern och uttrycksfull UI/UX med animationer och visuella effekter som passar varumärkets stil. Exempelvis visas animerad text (“DEFY THE ORDINARY”) på startsidan. Produktkort har hover-effekter och komponenten Variant Selector gör det smidigt att välja färg/storlek och se tillgängliga alternativ. Appen har även ett analysmodul som spårar användarbeteende och sidvisningar för affärsinsikter.
+3. Kör:
 
-LÄNK:
-https://homebuddy-react-aedac9f5ckbbfmcm.norwayeast-01.azurewebsites.net/
+```bash
+npm run dev
+```
+
+## Hur det fungerar (simpelt, tekniskt)
+
+### Dataflöde
+- Frontend anropar backend via `apiClient` som automatiskt skickar `Authorization: Bearer <token>` när token finns.
+- Produktsidor/listningar använder publika endpoints (`/api/products`, `/api/groups/...`, `/api/categories`).
+
+### Auth (kund + admin)
+- Login/register via `/api/auth/*`.
+- Token sparas i `localStorage`.
+- **Sessionvalidering**: `authService.checkAuth()` anropar **`GET /api/auth/me`** (server‑validerad identitet), inte bara lokal JWT‑decode.
+- Admin-login via `/admin/login` ger Admin‑roll i JWT.
+
+### Forgot/Reset password (förberett för e‑post)
+- `/forgot-password` → `POST /api/auth/forgot-password`. I development kan token returneras för test (utan e‑posttjänst).
+- `/reset-password` → `POST /api/auth/reset-password` med `email + token + newPassword`.
+
+### Cookie consent & Analytics
+- Cookie policy + banner finns.
+- Google Analytics laddas **först efter** att användaren accepterat cookies (via `AnalyticsGate`).
+
+### Shop, sök och filter
+- `/shop` och `/shop/[category]` använder backend‑filter (Search/Category/Color/Size/MinPrice/MaxPrice) + sortering.
+- `/shop/[category]/[product]` visar produktgrupp, varianter, recensioner och variant‑selector.
+
+### Deals / Rabatter
+- `/deals` visar rabatterade varor (backend: `ListPrice > Price`).
+- UI visar ordinarie pris överstruket + rabatt‑badge.
+
+### Kundvagn & checkout
+- Cart drawer: lägg till/ta bort, uppdatera antal.
+- Checkout: sammanfattning + landval (för moms).
+  - **Obs:** betalning är UI‑mässig; riktig betalningsleverantör är inte integrerad än.
+
+### Profil
+- `/profile`: orderhistorik, favoriter, adressbok, kontoinställningar, konto‑radering.
+
+### Favoriter (wishlist)
+- `/favorites` + favoritknappar använder backend favorites‑endpoints (kräver User‑JWT).
+
+### Adminpanel
+- `/admin`: admin‑dashboard med sektioner för Admins, Users, Reviews, Orders, Product Groups, Variants (lager), Categories och **Kampanjer** (grupprabatter).
+
+## Kravspec – uppfyllelse (kort)
+
+✅ Finns i kod:
+- Registrering/inloggning med JWT + roller (User/Admin)
+- Produktlistning + produktsida + sök/filter
+- Kundvagn + checkout‑flöde + orderbekräftelse (orderNo) i UI
+- Mitt konto + orderhistorik + favoriter + recensioner
+- Adminpanel för katalog, orders, users, dashboard och kampanjer (grupprabatter)
+
+⚠️ Delvis:
+- Tillgänglighet (WCAG) och full compliance‑arbete återstår (audit + åtgärder).
+
+❌ Kräver externa integrationer:
+- Betalningsleverantör (Stripe/Klarna) + orderbekräftelse via e‑post
+- Frakt/tracking/returer/återbetalningar
+
+## Länk
+
+`https://homebuddy-react-aedac9f5ckbbfmcm.norwayeast-01.azurewebsites.net/`
