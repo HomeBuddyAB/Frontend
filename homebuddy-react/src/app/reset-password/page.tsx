@@ -1,15 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { authService } from "@/services/auth.service";
 import { toast } from "react-toastify";
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const e = searchParams.get("email");
+    const t = searchParams.get("token");
+    if (e) setEmail(e);
+    if (t) setToken(t);
+  }, [searchParams]);
 
   const submit = async () => {
     const e = email.trim();
@@ -36,7 +45,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md rounded-2xl border border-[#362222] bg-[#1a1a1a] p-6 space-y-4">
         <h1 className="text-2xl font-bold text-white">Reset password</h1>
         <p className="text-sm text-gray-300">
-          Paste the reset token and choose a new password.
+          Open the link from your email, or paste the reset token and choose a new password.
         </p>
 
         <input
@@ -80,6 +89,20 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#171010] px-4 text-gray-300">
+          Loading…
+        </div>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
 
