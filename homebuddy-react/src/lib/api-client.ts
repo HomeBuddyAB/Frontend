@@ -9,6 +9,11 @@ export type Category = {
   id: string;
   name: string;
   slug: string;
+  parentCategoryId?: string | null;
+  parentCategoryName?: string | null;
+  parentCategorySlug?: string | null;
+  subcategoryCount?: number;
+  productGroupCount?: number;
 };
 
 export type VariantListItem = {
@@ -44,6 +49,9 @@ export interface GroupDetail {
   groupSlug: string;
   name: string;
   mainCategory: string;
+  mainCategorySlug: string;
+  subcategory: string;
+  subcategorySlug: string;
   heroImageUrl: string;
   minPrice: number;
   maxPrice: number;
@@ -56,7 +64,9 @@ export interface GroupDetail {
 }
 
 export type ProductListingParams = {
-  categorySlug: string;
+  parentCategorySlug?: string;
+  subcategorySlug?: string;
+  categorySlug?: string;
   color?: string;
   size?: string;
   minPrice?: string;
@@ -490,8 +500,17 @@ async function requestJSON<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 /** Categories for nav/landing */
-export async function fetchCategories(): Promise<Category[]> {
-  return requestJSON<Category[]>('/api/categories');
+export async function fetchCategories(options?: { page?: number; parentsOnly?: boolean; leafOnly?: boolean }): Promise<Category[]> {
+  const sp = new URLSearchParams();
+  if (options?.page) sp.set('page', String(options.page));
+  if (options?.parentsOnly) sp.set('parentsOnly', 'true');
+  if (options?.leafOnly) sp.set('leafOnly', 'true');
+  const query = sp.toString();
+  return requestJSON<Category[]>(`/api/categories${query ? `?${query}` : ''}`);
+}
+
+export async function fetchSubcategories(parentCategorySlug: string): Promise<Category[]> {
+  return requestJSON<Category[]>(`/api/categories/${encodeURIComponent(parentCategorySlug)}/subcategories`);
 }
 
 /** Variant-level listing for a category; returns one page + totalCount for pagination UI */
@@ -499,7 +518,9 @@ export async function fetchCategoryListing(
   params: ProductListingParams
 ): Promise<CategoryListingResult> {
   const sp = new URLSearchParams();
-  sp.set('CategorySlug', params.categorySlug);
+  if (params.parentCategorySlug) sp.set('ParentCategorySlug', params.parentCategorySlug);
+  if (params.subcategorySlug) sp.set('SubcategorySlug', params.subcategorySlug);
+  if (params.categorySlug) sp.set('CategorySlug', params.categorySlug);
   if (params.color) sp.set('Color', params.color);
   if (params.size) sp.set('Size', params.size);
   if (params.minPrice) sp.set('MinPrice', params.minPrice);
@@ -540,6 +561,9 @@ export async function fetchGroupDetail(slugOrId: string, sku?: string): Promise<
     groupSlug: raw.slug,
     name: raw.name,
     mainCategory: raw.mainCategory,
+    mainCategorySlug: raw.mainCategorySlug,
+    subcategory: raw.subcategory,
+    subcategorySlug: raw.subcategorySlug,
     heroImageUrl: raw.heroImageUrl,
     minPrice: raw.minPrice,
     maxPrice: raw.maxPrice,

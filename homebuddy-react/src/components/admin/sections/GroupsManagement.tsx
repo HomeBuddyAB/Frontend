@@ -38,7 +38,7 @@ export default function GroupsManagement() {
 
     const fetchCategories = async () => {
         try {
-            const response = await categoryService.getAll();
+            const response = await categoryService.getAll(1, { leafOnly: true });
             if (response.error) {
                 console.error('Error fetching categories:', response.error);
                 return [];
@@ -241,7 +241,10 @@ export default function GroupsManagement() {
                     <FormField
                         label="Category ID"
                         type='select'
-                        options={categories.map(cat => ({ value: cat.id || '', label: cat.name || '' }))}
+                        options={categories.map(cat => ({
+                            value: cat.id || '',
+                            label: cat.parentCategoryName ? `${cat.parentCategoryName} / ${cat.name}` : (cat.name || ''),
+                        }))}
                         name="categoryId"
                         value={formData.categoryId}
                         onChange={(val) => setFormData(prev => ({ ...prev, categoryId: val }))}

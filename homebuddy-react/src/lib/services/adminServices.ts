@@ -33,6 +33,9 @@ export interface Item {
     slug: string;
     groupName: string;
     mainCategory: string;
+    categorySlug: string;
+    subcategoryName: string;
+    subcategorySlug: string;
     color: string;
     size: string;
     price: number;
@@ -116,6 +119,11 @@ export interface Category {
     id: string | number;
     name: string;
     slug: string;
+    parentCategoryId?: string | number | null;
+    parentCategoryName?: string | null;
+    parentCategorySlug?: string | null;
+    subcategoryCount?: number;
+    productGroupCount?: number;
 }
 
 // ========== Dashboard Types ==========
@@ -361,8 +369,26 @@ export const itemService = {
 
 // ========== Categories Service ==========
 export const categoryService = {
-    getAll: (page: number = 1) => apiClient.get<Category[]>(`/api/Categories?page=${page}`),
-    getAllCount: () => apiClient.get<number>('/api/Categories/count'),
+    getAll: (page: number = 1, options?: { parentsOnly?: boolean; leafOnly?: boolean }) => {
+        const params = new URLSearchParams({ page: String(page) });
+        if (options?.parentsOnly) params.set('parentsOnly', 'true');
+        if (options?.leafOnly) params.set('leafOnly', 'true');
+        return apiClient.get<Category[]>(`/api/admin/categories?${params.toString()}`);
+    },
+    getAllCount: () => apiClient.get<number>('/api/admin/categories/count'),
+    create: (name: string, slug?: string, parentCategoryId?: string) =>
+        apiClient.post<Category>('/api/admin/categories', {
+            name,
+            slug: slug || null,
+            parentCategoryId: parentCategoryId || null,
+        }),
+    update: (id: string | number, name: string, slug?: string, parentCategoryId?: string) =>
+        apiClient.put(`/api/admin/categories/${id}`, {
+            name,
+            slug: slug || null,
+            parentCategoryId: parentCategoryId || null,
+        }),
+    delete: (id: string | number) => apiClient.delete(`/api/admin/categories/${id}`),
 };
 
 // ========== Dashboard Service ==========

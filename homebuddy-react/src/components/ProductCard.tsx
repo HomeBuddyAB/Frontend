@@ -9,10 +9,12 @@ import { GroupedProductCard } from '@/lib/shop-types';
 export default function ProductCard({
   product,
   categorySlug,
+  subcategorySlug,
   compact = false,
 }: {
   product: GroupedProductCard;
   categorySlug: string;
+  subcategorySlug?: string;
   compact?: boolean;
 }) {
   const priceText =
@@ -28,10 +30,10 @@ export default function ProductCard({
     return null;
   }
 
-  // Build the correct URL: /shop/{category}/{GROUP_IDENTIFIER}?sku={variant}
+  const resolvedSubcategory = subcategorySlug || categorySlug;
   const href = `/shop/${encodeURIComponent(categorySlug)}/${encodeURIComponent(
-    productIdentifier
-  )}${product.sampleSku ? `?sku=${encodeURIComponent(product.sampleSku)}` : ''}`;
+    resolvedSubcategory
+  )}/${encodeURIComponent(productIdentifier)}${product.sampleSku ? `?sku=${encodeURIComponent(product.sampleSku)}` : ''}`;
 
   return (
     <div

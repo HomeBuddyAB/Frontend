@@ -18,7 +18,8 @@ export default function ShopLanding() {
   const urlSearch = searchParams.get('search') ?? '';
   const pageFromUrl = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
 
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [parentCategories, setParentCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -40,8 +41,10 @@ export default function ShopLanding() {
           fetchCategories().catch(() => []),
           itemService.getAll(pageFromUrl, ITEMS_PER_PAGE, searchTerm),
         ]);
-
-        setCategories((prev) => (categoriesData.length > 0 ? categoriesData : prev));
+        const parents = categoriesData.filter((c) => !c.parentCategoryId);
+        const leaves = categoriesData.filter((c) => !!c.parentCategoryId);
+        setParentCategories((prev) => (parents.length > 0 ? parents : prev));
+        setSubcategories((prev) => (leaves.length > 0 ? leaves : prev));
 
         if (response.error || !response.data) {
           throw new Error(response.error ?? 'Failed to fetch products');
@@ -88,7 +91,7 @@ export default function ShopLanding() {
     );
   }
 
-  if (categories.length === 0 && items.length === 0 && totalCount === 0) {
+  if (parentCategories.length === 0 && items.length === 0 && totalCount === 0) {
     return (
       <main className="container mx-auto px-4 py-24 text-center min-h-screen" style={{ backgroundColor: '#FAF3E0' }}>
         <div className="max-w-md mx-auto">
@@ -121,32 +124,43 @@ export default function ShopLanding() {
       <div className="container mx-auto px-6 md:px-12 py-12">
 
         {/* Category Pills - Bright & Friendly */}
-        {categories.length > 0 && (
+        {parentCategories.length > 0 && (
           <section className="mb-16">
-            <h2 className="text-2xl font-bold mb-6" style={{ color: '#2D3E50' }}>Browse by Category</h2>
-            <div className="flex flex-wrap gap-3">
-              {categories.map((c) => (
-                <Link
-                  key={c.id}
-                  href={`/shop/${encodeURIComponent(c.slug)}`}
-                  className="px-6 py-3 rounded-full border-2 text-sm font-bold tracking-wide transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-                  style={{ 
-                    borderColor: '#E8DCC4', 
-                    color: '#2D3E50',
-                    backgroundColor: '#FFFFFF'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#F4A261';
-                    e.currentTarget.style.color = '#F4A261';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#E8DCC4';
-                    e.currentTarget.style.color = '#2D3E50';
-                  }}
-                >
-                  {c.name}
-                </Link>
-              ))}
+            <h2 className="text-2xl font-bold mb-6" style={{ color: '#2D3E50' }}>Browse by Department</h2>
+            <div className="space-y-4">
+              {parentCategories.map((parent) => {
+                const subs = subcategories.filter((s) => s.parentCategorySlug === parent.slug);
+                return (
+                  <div key={parent.id} className="rounded-xl border-2 p-4 bg-white" style={{ borderColor: '#E8DCC4' }}>
+                    <div className="flex items-center justify-between gap-4 mb-3">
+                      <h3 className="text-lg font-bold" style={{ color: '#2D3E50' }}>{parent.name}</h3>
+                      <Link
+                        href={`/shop/${encodeURIComponent(parent.slug)}`}
+                        className="text-xs font-bold uppercase tracking-wide"
+                        style={{ color: '#F4A261' }}
+                      >
+                        View Subcategories
+                      </Link>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {subs.length === 0 ? (
+                        <span className="text-sm" style={{ color: '#8B9CAE' }}>No subcategories yet</span>
+                      ) : (
+                        subs.map((sub) => (
+                          <Link
+                            key={sub.id}
+                            href={`/shop/${encodeURIComponent(parent.slug)}/${encodeURIComponent(sub.slug)}`}
+                            className="px-4 py-2 rounded-full border-2 text-xs font-bold tracking-wide transition-all duration-300 hover:shadow-md"
+                            style={{ borderColor: '#E8DCC4', color: '#2D3E50', backgroundColor: '#FFFFFF' }}
+                          >
+                            {sub.name}
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}
@@ -199,8 +213,7 @@ export default function ShopLanding() {
             ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
               {items.map((item) => {
-                const categorySlug = item.mainCategory.toLowerCase().replace(/\s+/g, '-');
-                const href = `/shop/${encodeURIComponent(categorySlug)}/${encodeURIComponent(item.slug)}?sku=${encodeURIComponent(item.sku)}`;
+                const href = `/shop/${encodeURIComponent(item.categorySlug)}/${encodeURIComponent(item.subcategorySlug)}/${encodeURIComponent(item.slug)}?sku=${encodeURIComponent(item.sku)}`;
 
                 return (
                   <Link key={item.id} href={href} className="group block">
@@ -256,7 +269,7 @@ export default function ShopLanding() {
                             {item.groupName}
                           </h3>
                           <div className="flex items-center gap-2 text-xs mb-3" style={{ color: '#8B9CAE' }}>
-                            <span className="font-medium">{item.mainCategory}</span>
+                            <span className="font-medium">{item.mainCategory} / {item.subcategoryName}</span>
                             {item.moreVariantsCount > 0 && (
                               <>
                                 <span>•</span>

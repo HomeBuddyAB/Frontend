@@ -1,11 +1,16 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CartDrawer from "./CartDrawer";
 import { useCart } from "@/contexts/CartContext";
 
 export default function CartButton() {
     const { totalItems } = useCart();
     const [isOpen, setIsOpen] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     return (
         <div className="w-full">
@@ -33,7 +38,7 @@ export default function CartButton() {
                 <span className="relative z-10 flex items-center justify-center gap-2">
                     <span className="text-lg">🛒</span>
                     <span className="tracking-wider">CART</span>
-                    {totalItems > 0 && (
+                    {isMounted && totalItems > 0 && (
                         <span
                             className="ml-1 px-2 py-0.5 text-xs font-bold rounded-full"
                             style={{ backgroundColor: "#8B4545" }}

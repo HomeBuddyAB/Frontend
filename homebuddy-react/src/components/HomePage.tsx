@@ -11,23 +11,26 @@ import { fetchCategories, fetchCategoryListing, groupVariantsToProducts } from "
 import type { GroupedProductCard } from "@/lib/shop-types";
 import { ArrowRight, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 
-const DEMO_CATEGORY_SLUGS = [
-  { id: "1", name: "Furniture", slug: "furniture" },
-  { id: "2", name: "Materials", slug: "materials" },
-  { id: "3", name: "Power Tools", slug: "power-tools" },
-  { id: "4", name: "Lighting", slug: "lighting" },
+const DEMO_SUBCATEGORY_SLUGS = [
+  { id: "1", name: "Chairs", slug: "chairs", parentCategorySlug: "furniture" },
+  { id: "2", name: "Tables", slug: "tables", parentCategorySlug: "furniture" },
+  { id: "3", name: "Drills", slug: "drills", parentCategorySlug: "power-tools" },
+  { id: "4", name: "Lamps", slug: "lamps", parentCategorySlug: "lighting" },
 ];
 
 export type CategoryRow = {
   id: string;
   name: string;
   slug: string;
+  parentSlug?: string;
+  parentName?: string;
   products: GroupedProductCard[];
 };
 
 type DailyRecommendation = {
   product: GroupedProductCard;
   categorySlug: string;
+  subcategorySlug: string;
 };
 
 function getDailyRecommendedProduct(rows: CategoryRow[]): DailyRecommendation | null {
@@ -36,7 +39,7 @@ function getDailyRecommendedProduct(rows: CategoryRow[]): DailyRecommendation | 
 
   for (const row of rows) {
     for (const product of row.products) {
-      const item = { product, categorySlug: row.slug };
+      const item = { product, categorySlug: row.parentSlug || row.slug, subcategorySlug: row.slug };
       all.push(item);
       if (product.anyInStock) {
         inStock.push(item);
@@ -355,25 +358,51 @@ export default function HomePage() {
       setRowsLoading(true);
       try {
         const cats = await fetchCategories().catch(() => []);
-        // Use API categories when available, but always show all 4 homepage rows (merge with demo so Power Tools etc. are never missing)
+        // Use API subcategories when available, but keep deterministic homepage rows.
         const apiList = Array.isArray(cats) && cats.length > 0
-          ? cats.map((c) => ({ id: String(c.id), name: c.name, slug: c.slug }))
+          ? cats
+              .filter((c: any) => !!c.parentCategorySlug)
+              .map((c: any) => ({
+                id: String(c.id),
+                name: c.name,
+                slug: c.slug,
+                parentCategorySlug: c.parentCategorySlug as string,
+                parentCategoryName: c.parentCategoryName as string,
+                productGroupCount: Number(c.productGroupCount || 0),
+              }))
           : [];
-        const slugToCat = new Map(apiList.map((c) => [c.slug, c]));
-        const list = DEMO_CATEGORY_SLUGS.map((demo) => slugToCat.get(demo.slug) ?? demo);
+        const list =
+          apiList.length > 0
+            ? [...apiList].sort((a, b) => (b.productGroupCount ?? 0) - (a.productGroupCount ?? 0)).slice(0, 4)
+            : DEMO_SUBCATEGORY_SLUGS;
 
         const rows: CategoryRow[] = await Promise.all(
           list.map(async (cat) => {
             try {
               const result = await fetchCategoryListing({
-                categorySlug: cat.slug,
+                parentCategorySlug: cat.parentCategorySlug,
+                subcategorySlug: cat.slug,
                 pageSize: String(PRODUCTS_PER_ROW),
                 page: "1",
               });
               const products = groupVariantsToProducts(result.items ?? []);
-              return { id: cat.id, name: cat.name, slug: cat.slug, products };
+              return {
+                id: cat.id,
+                name: cat.name,
+                slug: cat.slug,
+                parentSlug: cat.parentCategorySlug,
+                parentName: (cat as any).parentCategoryName,
+                products
+              };
             } catch {
-              return { id: cat.id, name: cat.name, slug: cat.slug, products: [] };
+              return {
+                id: cat.id,
+                name: cat.name,
+                slug: cat.slug,
+                parentSlug: cat.parentCategorySlug,
+                parentName: (cat as any).parentCategoryName,
+                products: []
+              };
             }
           })
         );
@@ -496,7 +525,11 @@ export default function HomePage() {
                 </div>
                 <div className="flex-1 min-h-0">
                   {dailyRecommendation ? (
-                    <ProductCard product={dailyRecommendation.product} categorySlug={dailyRecommendation.categorySlug} />
+                    <ProductCard
+                      product={dailyRecommendation.product}
+                      categorySlug={dailyRecommendation.categorySlug}
+                      subcategorySlug={dailyRecommendation.subcategorySlug}
+                    />
                   ) : (
                     <div className="w-full h-full grid place-items-center text-xs" style={{ color: "#8B9CAE" }}>
                       Loading today&apos;s pick...
@@ -566,10 +599,10 @@ export default function HomePage() {
                     <div className="max-w-7xl w-full mx-auto flex-1 min-h-0 flex flex-col overflow-hidden">
                     <div className="flex items-center justify-between gap-1 mb-1 shrink-0 min-h-[1.5rem]">
                       <h3 className="text-sm sm:text-base md:text-lg font-black truncate" style={{ color: "#2D3E50" }}>
-                        {row.name}
+                        {row.parentName ? `${row.parentName} / ${row.name}` : row.name}
                       </h3>
                       <Link
-                        href={`/shop/${encodeURIComponent(row.slug)}`}
+                        href={`/shop/${encodeURIComponent(row.parentSlug || row.slug)}/${encodeURIComponent(row.slug)}`}
                         className="inline-flex items-center gap-1 font-bold text-xs tracking-wider uppercase transition-colors hover:gap-1.5 shrink-0"
                         style={{ color: "#F4A261" }}
                       >
@@ -581,7 +614,7 @@ export default function HomePage() {
                       {row.products.length === 0 ? (
                         <div className="min-w-[96px] rounded-lg border-2 p-2 text-center shrink-0" style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}>
                           <p className="text-xs" style={{ color: "#5A6C7D" }}>No products yet.</p>
-                          <Link href={`/shop/${encodeURIComponent(row.slug)}`} className="mt-1 inline-block font-bold text-xs" style={{ color: "#F4A261" }}>
+                          <Link href={`/shop/${encodeURIComponent(row.parentSlug || row.slug)}/${encodeURIComponent(row.slug)}`} className="mt-1 inline-block font-bold text-xs" style={{ color: "#F4A261" }}>
                             View category →
                           </Link>
                         </div>
@@ -591,7 +624,7 @@ export default function HomePage() {
                             key={product.groupSlug || product.groupId || cardIndex}
                             className="flex-shrink-0 w-[96px] sm:w-[108px] md:w-[120px] lg:w-[132px] xl:w-[144px]"
                           >
-                            <ProductCard product={product} categorySlug={row.slug} compact />
+                            <ProductCard product={product} categorySlug={row.parentSlug || row.slug} subcategorySlug={row.slug} compact />
                           </div>
                         ))
                       )}

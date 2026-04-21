@@ -21,6 +21,9 @@ export type FavoriteItem = {
   slug?: string | null;
   groupName: string;
   mainCategory: string;
+  categorySlug: string;
+  subcategoryName: string;
+  subcategorySlug: string;
   color: string;
   size: string;
   price: number;

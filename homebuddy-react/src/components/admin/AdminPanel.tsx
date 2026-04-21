@@ -93,9 +93,9 @@ const menuItems: MenuItem[] = [
     },
     {
         id: 'Categories',
-        label: 'Categories',
+        label: 'Categories & Subcategories',
         icon: Grid3x3,
-        description: 'View product categories',
+        description: 'Manage parent categories and subcategories',
     },
 ];
 

@@ -4,6 +4,8 @@ export type Category = {
   id: string;
   name: string;
   slug: string;
+  parentCategoryId?: string | null;
+  parentCategorySlug?: string | null;
 };
 
 export type VariantListItem = {

@@ -120,11 +120,10 @@ function FavoritesPageContent() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {items.map((item) => {
-              const categorySlug = item.mainCategory.toLowerCase().replace(/\s+/g, "-");
               const href = item.slug
-                ? `/shop/${encodeURIComponent(categorySlug)}/${encodeURIComponent(
-                    item.slug
-                  )}?sku=${encodeURIComponent(item.sku)}`
+                ? `/shop/${encodeURIComponent(item.categorySlug)}/${encodeURIComponent(
+                    item.subcategorySlug
+                  )}/${encodeURIComponent(item.slug)}?sku=${encodeURIComponent(item.sku)}`
                 : item.groupLink;
 
               return (
