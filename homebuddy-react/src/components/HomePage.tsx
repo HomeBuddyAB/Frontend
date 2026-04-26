@@ -7,24 +7,24 @@ import { useRouter } from "next/navigation";
 import SplitText from "./SplitText";
 import AnimatedContent from "./AnimatedContent";
 import ProductCard from "./ProductCard";
-import { fetchCategories, fetchCategoryListing, groupVariantsToProducts } from "@/lib/api-client";
+import { fetchCategories, fetchCategoryListing, fetchDealsListing, groupVariantsToProducts } from "@/lib/api-client";
+import type { VariantListItem } from "@/lib/api-client";
 import type { GroupedProductCard } from "@/lib/shop-types";
 import { ArrowRight, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 
-const DEMO_SUBCATEGORY_SLUGS = [
-  { id: "1", name: "Chairs", slug: "chairs", parentCategorySlug: "furniture" },
-  { id: "2", name: "Tables", slug: "tables", parentCategorySlug: "furniture" },
-  { id: "3", name: "Drills", slug: "drills", parentCategorySlug: "power-tools" },
-  { id: "4", name: "Lamps", slug: "lamps", parentCategorySlug: "lighting" },
-];
+type MixedProductItem = {
+  product: GroupedProductCard;
+  categorySlug: string;
+  subcategorySlug: string;
+};
 
-export type CategoryRow = {
+type SubcategoryTile = {
   id: string;
   name: string;
   slug: string;
-  parentSlug?: string;
+  parentSlug: string;
   parentName?: string;
-  products: GroupedProductCard[];
+  imageUrl?: string;
 };
 
 type DailyRecommendation = {
@@ -33,21 +33,23 @@ type DailyRecommendation = {
   subcategorySlug: string;
 };
 
-function getDailyRecommendedProduct(rows: CategoryRow[]): DailyRecommendation | null {
-  const inStock: DailyRecommendation[] = [];
-  const all: DailyRecommendation[] = [];
-
-  for (const row of rows) {
-    for (const product of row.products) {
-      const item = { product, categorySlug: row.parentSlug || row.slug, subcategorySlug: row.slug };
-      all.push(item);
-      if (product.anyInStock) {
-        inStock.push(item);
-      }
-    }
+function seededShuffle<T>(items: T[], seed: string): T[] {
+  const out = [...items];
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   }
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    hash = (hash * 1664525 + 1013904223) >>> 0;
+    const j = hash % (i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
-  const pool = inStock.length > 0 ? inStock : all;
+function getDailyRecommendedProduct(items: MixedProductItem[]): DailyRecommendation | null {
+  const inStock = items.filter((i) => i.product.anyInStock);
+  const pool = inStock.length > 0 ? inStock : items;
   if (pool.length === 0) return null;
 
   const today = new Date();
@@ -58,10 +60,16 @@ function getDailyRecommendedProduct(rows: CategoryRow[]): DailyRecommendation | 
   }
 
   const index = hash % pool.length;
-  return pool[index];
+  return {
+    product: pool[index].product,
+    categorySlug: pool[index].categorySlug,
+    subcategorySlug: pool[index].subcategorySlug,
+  };
 }
 
-const PRODUCTS_PER_ROW = 12;
+const PRODUCTS_PER_SUBCATEGORY = 8;
+const MIXED_ROW_LIMIT = 36;
+const DEALS_ROW_LIMIT = 24;
 
 const TESTIMONIALS = [
   { stars: 5, quote: "Best home improvement store in the area! Staff is incredibly knowledgeable.", name: "Sarah M.", loc: "San Francisco, CA" },
@@ -349,17 +357,18 @@ function HorizontalDragScroller({
 export default function HomePage() {
   const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
-  const [categoryRows, setCategoryRows] = useState<CategoryRow[]>([]);
-  const [rowsLoading, setRowsLoading] = useState(true);
+  const [mixedProducts, setMixedProducts] = useState<MixedProductItem[]>([]);
+  const [subcategoryTiles, setSubcategoryTiles] = useState<SubcategoryTile[]>([]);
+  const [saleProducts, setSaleProducts] = useState<MixedProductItem[]>([]);
+  const [sectionsLoading, setSectionsLoading] = useState(true);
   const [dailyRecommendation, setDailyRecommendation] = useState<DailyRecommendation | null>(null);
 
   useEffect(() => {
     const load = async () => {
-      setRowsLoading(true);
+      setSectionsLoading(true);
       try {
-        const cats = await fetchCategories().catch(() => []);
-        // Use API subcategories when available, but keep deterministic homepage rows.
-        const apiList = Array.isArray(cats) && cats.length > 0
+        const cats = await fetchCategories({ leafOnly: true }).catch(() => []);
+        const apiLeafList = Array.isArray(cats) && cats.length > 0
           ? cats
               .filter((c: any) => !!c.parentCategorySlug)
               .map((c: any) => ({
@@ -371,57 +380,107 @@ export default function HomePage() {
                 productGroupCount: Number(c.productGroupCount || 0),
               }))
           : [];
-        const list =
-          apiList.length > 0
-            ? [...apiList].sort((a, b) => (b.productGroupCount ?? 0) - (a.productGroupCount ?? 0)).slice(0, 4)
-            : DEMO_SUBCATEGORY_SLUGS;
 
-        const rows: CategoryRow[] = await Promise.all(
+        const list = [...apiLeafList]
+          .sort((a, b) =>
+            (b.productGroupCount || 0) - (a.productGroupCount || 0) ||
+            a.name.localeCompare(b.name)
+          );
+
+        const today = new Date();
+        const dailySeed = `${today.getUTCFullYear()}-${today.getUTCMonth() + 1}-${today.getUTCDate()}`;
+
+        const subcategoryResults = await Promise.all(
           list.map(async (cat) => {
             try {
               const result = await fetchCategoryListing({
                 parentCategorySlug: cat.parentCategorySlug,
                 subcategorySlug: cat.slug,
-                pageSize: String(PRODUCTS_PER_ROW),
+                pageSize: String(PRODUCTS_PER_SUBCATEGORY),
                 page: "1",
               });
               const products = groupVariantsToProducts(result.items ?? []);
-              return {
-                id: cat.id,
-                name: cat.name,
-                slug: cat.slug,
-                parentSlug: cat.parentCategorySlug,
-                parentName: (cat as any).parentCategoryName,
-                products
-              };
+              return { cat, products };
             } catch {
-              return {
-                id: cat.id,
-                name: cat.name,
-                slug: cat.slug,
-                parentSlug: cat.parentCategorySlug,
-                parentName: (cat as any).parentCategoryName,
-                products: []
-              };
+              return { cat, products: [] as GroupedProductCard[] };
             }
           })
         );
-        setCategoryRows(rows);
+
+        const tiles: SubcategoryTile[] = subcategoryResults.map(({ cat, products }) => ({
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          parentSlug: cat.parentCategorySlug,
+          parentName: cat.parentCategoryName,
+          imageUrl: products[0]?.primaryImageUrl || undefined,
+        }));
+
+        const mixedPool: MixedProductItem[] = [];
+        subcategoryResults.forEach(({ cat, products }) => {
+          products.forEach((product) => {
+            mixedPool.push({
+              product,
+              categorySlug: cat.parentCategorySlug,
+              subcategorySlug: cat.slug,
+            });
+          });
+        });
+
+        const dedupedMixed = Array.from(
+          new Map(
+            mixedPool.map((item) => [item.product.groupSlug || item.product.groupId || item.product.groupName, item])
+          ).values()
+        );
+        const shuffledMixed = seededShuffle(dedupedMixed, `home-mixed-${dailySeed}`).slice(0, MIXED_ROW_LIMIT);
+
+        const dealsResult = await fetchDealsListing({
+          page: "1",
+          pageSize: String(DEALS_ROW_LIMIT),
+        }).catch(() => ({ items: [] as VariantListItem[], totalCount: 0, page: 1, pageSize: DEALS_ROW_LIMIT, totalPages: 0 }));
+        const groupedDeals = groupVariantsToProducts(dealsResult.items ?? []);
+
+        // Keep deal links route-safe by deriving slugs from the underlying deal rows.
+        const dealLookup = new Map(
+          (dealsResult.items ?? []).map((i) => [
+            i.slug || i.groupSlug || i.objectId || i.groupName,
+            i,
+          ])
+        );
+        const normalizedSales: MixedProductItem[] = groupedDeals
+          .map((product) => {
+            const key = product.groupSlug || product.groupId || product.groupName;
+            const raw = dealLookup.get(String(key));
+            return {
+              product,
+              categorySlug: raw?.categorySlug || "",
+              subcategorySlug: raw?.subcategorySlug || raw?.categorySlug || "",
+            };
+          })
+          .filter((i) => i.categorySlug && i.subcategorySlug);
+
+        setSubcategoryTiles(tiles);
+        setMixedProducts(shuffledMixed);
+        setSaleProducts(normalizedSales);
       } catch (e) {
         console.error("HomePage load error:", e);
-        setCategoryRows([]);
+        setSubcategoryTiles([]);
+        setMixedProducts([]);
+        setSaleProducts([]);
       } finally {
-        setRowsLoading(false);
+        setSectionsLoading(false);
       }
     };
     load();
   }, []);
 
   useEffect(() => {
-    if (!rowsLoading && categoryRows.length > 0) {
-      setDailyRecommendation(getDailyRecommendedProduct(categoryRows));
+    if (!sectionsLoading && mixedProducts.length > 0) {
+      setDailyRecommendation(getDailyRecommendedProduct(mixedProducts));
+      return;
     }
-  }, [rowsLoading, categoryRows]);
+    setDailyRecommendation(null);
+  }, [sectionsLoading, mixedProducts]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -554,7 +613,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Category rows: all 4 rows visible, no height cap. Each row clips its own content so no bleed. */}
+      {/* Section A: Mixed product discovery row */}
       <section
         className="px-6 pt-4 pb-6 box-border"
         style={{
@@ -562,83 +621,99 @@ export default function HomePage() {
           borderBottom: "1px solid #E8DCC4",
         }}
       >
-        <div className="max-w-7xl mx-auto flex flex-col">
+        <div className="max-w-7xl mx-auto flex flex-col gap-3">
           <AnimatedContent delay={0.1} distance={24}>
             <div className="shrink-0">
               <h2 className="text-lg sm:text-xl md:text-2xl font-black mb-0.5" style={{ color: "#2D3E50" }}>
-                Shop by Category
+                Explore Products
               </h2>
-              <p className="text-xs sm:text-sm mb-2 sm:mb-3" style={{ color: "#5A6C7D" }}>Browse products in each category</p>
+              <p className="text-xs sm:text-sm mb-2 sm:mb-3" style={{ color: "#5A6C7D" }}>
+                A mixed row of products from active subcategories.
+              </p>
             </div>
           </AnimatedContent>
 
-          {rowsLoading ? (
-            <div className="max-w-7xl w-full mx-auto grid gap-2 sm:gap-3" style={{ gridTemplateRows: 'repeat(4, auto)' }}>
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="min-h-0 flex flex-col">
-                  <div className="h-5 sm:h-6 w-32 sm:w-40 rounded animate-pulse mb-1 shrink-0" style={{ backgroundColor: "#E8DCC4" }} />
-                  <div className="flex gap-2 sm:gap-3 overflow-hidden flex-1 min-h-0">
-                    {                    [1, 2, 3, 4, 5].map((j) => (
-                    <div key={j} className="flex-shrink-0 w-[96px] sm:w-[108px] md:w-[120px] lg:w-[132px] xl:w-[144px] rounded-lg border-2 overflow-hidden animate-pulse" style={{ borderColor: "#E8DCC4", backgroundColor: "#F5ECD4" }}>
-                        <div className="aspect-square bg-white/50" />
-                        <div className="p-2 space-y-1">
-                          <div className="h-3 w-3/4 rounded" style={{ backgroundColor: "#E8DCC4" }} />
-                          <div className="h-4 w-1/3 rounded" style={{ backgroundColor: "#E8DCC4" }} />
-                        </div>
-                      </div>
-                    ))}
+          {sectionsLoading ? (
+            <div className="flex gap-2 sm:gap-3 overflow-hidden">
+              {[1, 2, 3, 4, 5, 6].map((j) => (
+                <div
+                  key={j}
+                  className="flex-shrink-0 w-[96px] sm:w-[108px] md:w-[120px] lg:w-[132px] xl:w-[144px] rounded-lg border-2 overflow-hidden animate-pulse"
+                  style={{ borderColor: "#E8DCC4", backgroundColor: "#F5ECD4" }}
+                >
+                  <div className="aspect-square bg-white/50" />
+                  <div className="p-2 space-y-1">
+                    <div className="h-3 w-3/4 rounded" style={{ backgroundColor: "#E8DCC4" }} />
+                    <div className="h-4 w-1/3 rounded" style={{ backgroundColor: "#E8DCC4" }} />
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="grid gap-2 sm:gap-3" style={{ gridTemplateRows: 'repeat(4, auto)' }}>
-              {categoryRows.map((row, rowIndex) => (
-                <div key={row.id} className="min-h-0 flex flex-col overflow-hidden">
-                  <AnimatedContent delay={rowIndex * 0.05} distance={24}>
-                    <div className="max-w-7xl w-full mx-auto flex-1 min-h-0 flex flex-col overflow-hidden">
-                    <div className="flex items-center justify-between gap-1 mb-1 shrink-0 min-h-[1.5rem]">
-                      <h3 className="text-sm sm:text-base md:text-lg font-black truncate" style={{ color: "#2D3E50" }}>
-                        {row.parentName ? `${row.parentName} / ${row.name}` : row.name}
-                      </h3>
-                      <Link
-                        href={`/shop/${encodeURIComponent(row.parentSlug || row.slug)}/${encodeURIComponent(row.slug)}`}
-                        className="inline-flex items-center gap-1 font-bold text-xs tracking-wider uppercase transition-colors hover:gap-1.5 shrink-0"
-                        style={{ color: "#F4A261" }}
-                      >
-                        View all
-                        <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    </div>
-                    <HorizontalDragScroller ariaLabel={`${row.name} products`}>
-                      {row.products.length === 0 ? (
-                        <div className="min-w-[96px] rounded-lg border-2 p-2 text-center shrink-0" style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}>
-                          <p className="text-xs" style={{ color: "#5A6C7D" }}>No products yet.</p>
-                          <Link href={`/shop/${encodeURIComponent(row.parentSlug || row.slug)}/${encodeURIComponent(row.slug)}`} className="mt-1 inline-block font-bold text-xs" style={{ color: "#F4A261" }}>
-                            View category →
-                          </Link>
-                        </div>
-                      ) : (
-                        row.products.map((product, cardIndex) => (
-                          <div
-                            key={product.groupSlug || product.groupId || cardIndex}
-                            className="flex-shrink-0 w-[96px] sm:w-[108px] md:w-[120px] lg:w-[132px] xl:w-[144px]"
-                          >
-                            <ProductCard product={product} categorySlug={row.parentSlug || row.slug} subcategorySlug={row.slug} compact />
-                          </div>
-                        ))
-                      )}
-                    </HorizontalDragScroller>
-                  </div>
-                  </AnimatedContent>
+            <HorizontalDragScroller ariaLabel="Mixed products from all subcategories">
+              {mixedProducts.length === 0 ? (
+                <div
+                  className="min-w-[220px] rounded-lg border-2 p-4 text-center shrink-0"
+                  style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}
+                >
+                  <p className="text-sm" style={{ color: "#5A6C7D" }}>No products available yet.</p>
                 </div>
-              ))}
-            </div>
+              ) : (
+                mixedProducts.map((item, cardIndex) => (
+                  <div
+                    key={item.product.groupSlug || item.product.groupId || cardIndex}
+                    className="flex-shrink-0 w-[96px] sm:w-[108px] md:w-[120px] lg:w-[132px] xl:w-[144px]"
+                  >
+                    <ProductCard
+                      product={item.product}
+                      categorySlug={item.categorySlug}
+                      subcategorySlug={item.subcategorySlug}
+                      compact
+                    />
+                  </div>
+                ))
+              )}
+            </HorizontalDragScroller>
           )}
         </div>
       </section>
 
-      {/* Sales banner under categories */}
+      {/* Section B: Subcategory quick navigation */}
+      <section className="px-6 py-6" style={{ backgroundColor: "#FFFFFF" }}>
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-black mb-0.5" style={{ color: "#2D3E50" }}>
+            Underkategorier
+          </h2>
+          <p className="text-xs sm:text-sm mb-4" style={{ color: "#5A6C7D" }}>
+            Jump straight into a subcategory.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {subcategoryTiles.map((tile) => (
+              <Link
+                key={tile.id}
+                href={`/shop/${encodeURIComponent(tile.parentSlug)}/${encodeURIComponent(tile.slug)}`}
+                className="rounded-xl border-2 p-3 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+                style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}
+              >
+                <div className="h-16 w-full grid place-items-center mb-2">
+                  {tile.imageUrl ? (
+                    <img src={tile.imageUrl} alt={tile.name} className="h-14 w-14 object-cover rounded-lg" loading="lazy" />
+                  ) : (
+                    <div className="h-14 w-14 rounded-lg grid place-items-center" style={{ backgroundColor: "#F5ECD4", color: "#8B9CAE" }}>
+                      <span className="text-xl">📦</span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-center font-semibold leading-tight" style={{ color: "#2D3E50" }}>
+                  {tile.name}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Sales banner under subcategories */}
       <section className="px-6 py-6" style={{ backgroundColor: "#FFFFFF" }}>
         <div className="max-w-7xl mx-auto">
           <PromoBanner
@@ -647,6 +722,45 @@ export default function HomePage() {
             imageAlt="Sales banner linking to items on sale"
             dropdownText="View items on sale"
           />
+        </div>
+      </section>
+
+      {/* Section C: On-sale products row */}
+      <section className="px-6 pt-2 pb-10" style={{ backgroundColor: "#FFFFFF" }}>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-black" style={{ color: "#2D3E50" }}>
+              On Sale
+            </h2>
+            <Link href="/deals" className="inline-flex items-center gap-1 font-bold text-xs tracking-wider uppercase" style={{ color: "#F4A261" }}>
+              View all deals
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <HorizontalDragScroller ariaLabel="Products currently on sale">
+            {saleProducts.length === 0 ? (
+              <div
+                className="min-w-[220px] rounded-lg border-2 p-4 text-center shrink-0"
+                style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}
+              >
+                <p className="text-sm" style={{ color: "#5A6C7D" }}>No discounted products right now.</p>
+              </div>
+            ) : (
+              saleProducts.map((item, cardIndex) => (
+                <div
+                  key={item.product.groupSlug || item.product.groupId || cardIndex}
+                  className="flex-shrink-0 w-[96px] sm:w-[108px] md:w-[120px] lg:w-[132px] xl:w-[144px]"
+                >
+                  <ProductCard
+                    product={item.product}
+                    categorySlug={item.categorySlug}
+                    subcategorySlug={item.subcategorySlug}
+                    compact
+                  />
+                </div>
+              ))
+            )}
+          </HorizontalDragScroller>
         </div>
       </section>
 

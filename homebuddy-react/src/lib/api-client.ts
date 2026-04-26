@@ -21,6 +21,8 @@ export type VariantListItem = {
   groupId?: string | null;
   groupSlug?: string | null;
   groupName: string;
+  categorySlug?: string | null;
+  subcategorySlug?: string | null;
   price: number;
   inStock: boolean;
   color?: string | null;
@@ -430,11 +432,20 @@ class ApiClient {
         axiosError.message ||
         'An error occurred';
 
-      console.error('🚨 API Client Error:', {
-        status: axiosError.response?.status,
-        message: errorMessage,
-        url: axiosError.config?.url,
-      });
+      const status = axiosError.response?.status;
+      if (!status || status >= 500) {
+        console.error('🚨 API Client Error:', {
+          status,
+          message: errorMessage,
+          url: axiosError.config?.url,
+        });
+      } else {
+        console.warn('🚨 API Client Error:', {
+          status,
+          message: errorMessage,
+          url: axiosError.config?.url,
+        });
+      }
 
       return { error: errorMessage, status: axiosError.response?.status || 500 };
     }
@@ -540,6 +551,38 @@ export async function fetchCategoryListing(
   if (params.pageSize) sp.set('PageSize', params.pageSize);
 
   const raw = await requestJSON<ProductListPageResponse>(`/api/products?${sp.toString()}`);
+  return {
+    items: raw.items ?? [],
+    totalCount: raw.totalCount ?? 0,
+    page: raw.page ?? 1,
+    pageSize: raw.pageSize ?? 24,
+    totalPages: raw.totalPages ?? 0,
+  };
+}
+
+/** Discounted variants listing; mirrors category listing pagination shape */
+export async function fetchDealsListing(
+  params: Pick<ProductListingParams, "categorySlug" | "parentCategorySlug" | "subcategorySlug" | "sort" | "page" | "pageSize">
+): Promise<CategoryListingResult> {
+  const sp = new URLSearchParams();
+  if (params.parentCategorySlug) sp.set("ParentCategorySlug", params.parentCategorySlug);
+  if (params.subcategorySlug) sp.set("SubcategorySlug", params.subcategorySlug);
+  if (params.categorySlug) sp.set("CategorySlug", params.categorySlug);
+
+  if (params.sort) {
+    if (params.sort.startsWith("price")) {
+      sp.set("Sort", "price");
+      sp.set("Dir", params.sort.endsWith("asc") ? "asc" : "desc");
+    } else if (params.sort.startsWith("name")) {
+      sp.set("Sort", "name");
+      sp.set("Dir", params.sort.endsWith("asc") ? "asc" : "desc");
+    }
+  }
+
+  if (params.page) sp.set("Page", params.page);
+  if (params.pageSize) sp.set("PageSize", params.pageSize);
+
+  const raw = await requestJSON<ProductListPageResponse>(`/api/products/deals?${sp.toString()}`);
   return {
     items: raw.items ?? [],
     totalCount: raw.totalCount ?? 0,
