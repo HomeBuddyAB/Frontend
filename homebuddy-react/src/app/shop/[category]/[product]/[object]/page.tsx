@@ -3,6 +3,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import VariantSelector from "@/components/VariantSelector";
 import ProductAnalytics from "@/components/ProductAnalytics";
 import { fetchGroupDetail, GroupDetail } from "@/lib/api-client";
+import { getListPriceFromRow } from "@/lib/pricing";
 import OpenAiPopup from "../openAiPopup";
 import ProductReviews from "../productReviews";
 import CreateReviewSection from "../CreateReviewSection";
@@ -52,6 +53,8 @@ export default async function ProductPage({ params, searchParams }: Props) {
         color: v.color ?? "",
         size: v.size ?? "",
         price: v.price,
+        listPrice:
+          (getListPriceFromRow(v as unknown as Record<string, unknown>) ?? v.listPrice) ?? undefined,
         inStock: v.inStock,
         images: v.images,
         description: v.description,
@@ -91,7 +94,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
       </div>
 
       <div className="container mx-auto px-6 md:px-12 py-12">
-        <div className="mt-8 bg-white rounded-2xl p-8 border-2 shadow-lg" style={{ borderColor: "#E8DCC4" }}>
+        <div className="mt-8 rounded-2xl border-2 bg-white p-8 shadow-lg" style={{ borderColor: "#E8DCC4" }}>
           <VariantSelector group={mapGroupDetailToVariantSelector(group)} initialSku={sku} />
         </div>
 

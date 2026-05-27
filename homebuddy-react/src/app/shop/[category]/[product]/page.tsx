@@ -1,5 +1,6 @@
 import Breadcrumbs from '@/components/Breadcrumbs';
 import ListingFilters from '@/components/ListingFilters';
+import SaleDiscountCorner from '@/components/SaleDiscountCorner';
 import PaginationBar from '@/components/PaginationBar';
 import { fetchCategories, fetchCategoryListing, fetchGroupDetail, fetchSubcategories, groupVariantsToProducts } from '@/lib/api-client';
 import Link from 'next/link';
@@ -129,7 +130,10 @@ export default async function SubcategoryPage(props: Props) {
                   return (
                     <Link key={product.groupId} href={href} className="group block">
                       <div className="bg-white rounded-xl overflow-hidden border-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 h-full flex flex-col" style={{ borderColor: '#E8DCC4' }}>
-                        <div className="relative aspect-square w-full overflow-hidden" style={{ backgroundColor: '#F5ECD4' }}>
+                        <div className="relative aspect-square w-full overflow-hidden rounded-t-xl" style={{ backgroundColor: '#F5ECD4' }}>
+                          {product.maxDiscountPercent != null && product.maxDiscountPercent > 0 && (
+                            <SaleDiscountCorner percent={product.maxDiscountPercent} />
+                          )}
                           {product.primaryImageUrl ? (
                             <Image src={product.primaryImageUrl} alt={product.groupName} fill className="object-cover transition-transform duration-500 group-hover:scale-110" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
                           ) : (

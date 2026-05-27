@@ -12,7 +12,9 @@ import {
     Package,
     Grid3x3,
     Percent,
-    ChevronRight
+    ChevronRight,
+    ClipboardCheck,
+    Inbox
 } from 'lucide-react';
 import AdminsManagement from './sections/AdminsManagement';
 import UsersManagement from './sections/UsersManagement';
@@ -23,6 +25,8 @@ import VariantsManagement from './sections/VariantsManagement';
 import CategoriesManagement from './sections/CategoriesManagement';
 import DiscountsManagement from './sections/DiscountsManagement';
 import Dashboard from './sections/Dashboard';
+import EditorialReview from './sections/EditorialReview';
+import CategorizationInbox from './sections/CategorizationInbox';
 
 type Section =
     | 'Dashboard'
@@ -33,7 +37,9 @@ type Section =
     | 'Groups'
     | 'Variants'
     | 'Discounts'
-    | 'Categories';
+    | 'Categories'
+    | 'EditorialReview'
+    | 'CategorizationInbox';
 
 interface MenuItem {
     id: Section;
@@ -87,15 +93,27 @@ const menuItems: MenuItem[] = [
     },
     {
         id: 'Discounts',
-        label: 'Kampanjer',
+        label: 'Sales',
         icon: Percent,
-        description: 'Rabattera eller avrabattera produktgrupper',
+        description: 'Apply or remove discounts on product groups',
     },
     {
         id: 'Categories',
         label: 'Categories & Subcategories',
         icon: Grid3x3,
         description: 'Manage parent categories and subcategories',
+    },
+    {
+        id: 'EditorialReview',
+        label: 'Editorial Review',
+        icon: ClipboardCheck,
+        description: 'Review staged imports, publish or reject',
+    },
+    {
+        id: 'CategorizationInbox',
+        label: 'Categorization Inbox',
+        icon: Inbox,
+        description: 'Assign categories to uncategorized imports',
     },
 ];
 
@@ -123,6 +141,10 @@ export default function AdminPanel() {
                 return <DiscountsManagement />;
             case 'Categories':
                 return <CategoriesManagement />;
+            case 'EditorialReview':
+                return <EditorialReview />;
+            case 'CategorizationInbox':
+                return <CategorizationInbox />;
             default:
                 return <AdminsManagement />;
         }

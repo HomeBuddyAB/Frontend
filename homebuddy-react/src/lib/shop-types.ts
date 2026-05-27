@@ -16,6 +16,7 @@ export type VariantListItem = {
   objectId?: string | null;
   groupName: string;
   price: number;
+  listPrice?: number | null;
   inStock: boolean;
   color?: string | null;
   size?: string | null;
@@ -61,6 +62,8 @@ export type GroupedProductCard = {
   description?: string | null;
   brand?: string | null;
   material?: string | null;
+  /** Highest discount percentage in the group (from list vs sale price). */
+  maxDiscountPercent?: number;
 };
 
 // ✅ NEW: Image type for gallery
@@ -88,6 +91,7 @@ export type GroupDetail = {
     color?: string | null;
     size?: string | null;
     price: number;
+    listPrice?: number | null;
     inStock: boolean;
     primaryImageUrl?: string | null;
     // Metadata fields

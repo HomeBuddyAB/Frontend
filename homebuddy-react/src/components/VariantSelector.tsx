@@ -6,12 +6,31 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "react-toastify"; // Ensure you have this installed
 import FavoriteHeart from "@/components/FavoriteHeart";
+import { getListPriceFromRow, saleDiscountPercent } from "@/lib/pricing";
+
+function DiagonalStrikethroughPrice({ value }: { value: number }) {
+  const formatted = `$${value.toFixed(2)}`;
+  return (
+    <span className="relative inline-flex shrink-0 items-center justify-center px-1 text-xl text-gray-500">
+      <span className="sr-only">{`Original price ${formatted}. `}</span>
+      <span aria-hidden className="tabular-nums text-gray-400">
+        {formatted}
+      </span>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[2px] w-[130%] -translate-x-1/2 -translate-y-1/2 -rotate-[17deg] bg-gray-500"
+      />
+    </span>
+  );
+}
 
 type Variant = {
   sku: string;
   color: string;
   size: string;
   price: number;
+  /** Pre-discount list price when the variant is on sale. */
+  listPrice?: number;
   inStock: boolean;
   images: string[];
   description: string | null;
@@ -129,6 +148,13 @@ export default function VariantSelector({
   const availableColors = Array.from(new Set(group.variants.map((v) => v.color)));
   const availableSizes = Array.from(new Set(group.variants.map((v) => v.size)));
 
+  const lp = getListPriceFromRow(selectedVariant as unknown as Record<string, unknown>) ?? selectedVariant.listPrice;
+  const variantOnSale =
+    lp != null && lp > selectedVariant.price + 0.004;
+  const variantDiscountPct = variantOnSale
+    ? saleDiscountPercent(selectedVariant.price, lp)
+    : null;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 animate-in fade-in duration-700">
 
@@ -197,10 +223,24 @@ export default function VariantSelector({
 
           <div className="flex items-center justify-between gap-4">
             <div>
-              <span className="text-3xl font-mono text-[#8B4513]">
-                ${selectedVariant.price.toFixed(2)}
-              </span>
-              <span className="ml-4 text-xs font-mono text-gray-500 uppercase tracking-widest">
+              <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                {variantOnSale ? (
+                  <>
+                    <DiagonalStrikethroughPrice value={lp!} />
+                    <span
+                      className="text-3xl font-mono text-[#8B4513] tabular-nums"
+                      aria-label={`Sale price $${selectedVariant.price.toFixed(2)}`}
+                    >
+                      ${selectedVariant.price.toFixed(2)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-3xl font-mono tabular-nums text-[#8B4513]">
+                    ${selectedVariant.price.toFixed(2)}
+                  </span>
+                )}
+              </div>
+              <span className="mt-2 inline-block text-xs font-mono uppercase tracking-widest text-gray-500">
                 SKU: {selectedVariant.sku}
               </span>
             </div>
@@ -278,6 +318,17 @@ export default function VariantSelector({
             </p>
           )}
         </div>
+
+        {variantDiscountPct != null && (
+          <div
+            className="mb-3 flex w-full items-center justify-center border border-[#FCA5A5] bg-[#FEF2F2] px-3 py-1.5"
+            aria-live="polite"
+          >
+            <span className="text-[0.6875rem] font-black uppercase tracking-[0.28em] text-[#DC2626]">
+              -{variantDiscountPct}%
+            </span>
+          </div>
+        )}
 
         {/* Add to Cart Button */}
         <button

@@ -396,6 +396,199 @@ export const dashboardService = {
     getSummary: () => apiClient.get<DashboardSummary>('/api/admin/dashboard/summary'),
 };
 
+// ========== Staging Types ==========
+export interface StagedGroup {
+    id: string;
+    objectId: string;
+    name: string;
+    slug?: string;
+    publishStatus: string;
+    rawCategoryHint?: string | null;
+    importSource?: string | null;
+    categoryId: string;
+    categoryName: string;
+    categorySlug: string;
+    parentCategoryName?: string | null;
+    parentCategorySlug?: string | null;
+    variantCount: number;
+    primaryImageUrl?: string | null;
+    isOrphaned: boolean;
+    orphanedAt?: string | null;
+    createdAt: string;
+    blockers: string[];
+    warnings: string[];
+}
+
+export interface StagingSummary {
+    staged: number;
+    ready: number;
+    rejected: number;
+    uncategorized: number;
+    orphaned: number;
+    feedSuspended: number;
+    missingPrice: number;
+    missingImage: number;
+    zeroStock: number;
+    total: number;
+}
+
+export interface CategoryMappingItem {
+    id: number;
+    supplierTerm: string;
+    supplierSource?: string | null;
+    subcategoryId: string;
+    subcategoryName: string;
+    subcategorySlug: string;
+    parentCategoryName?: string | null;
+    createdAt: string;
+}
+
+export interface ImportResultData {
+    staged: number;
+    updated: number;
+    skipped: number;
+    autoCategorized: number;
+    uncategorized: number;
+    orphaned: number;
+    unpublished: number;
+    reappeared: number;
+    feedSuspended: number;
+    feedRestored: number;
+    orphanAborted: boolean;
+    feedPauseApplied: boolean;
+    warnings: Array<{ externalId: string; issues: string[] }>;
+}
+
+export interface PaginatedStagingResponse {
+    items: StagedGroup[];
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+}
+
+export interface FeedSuspendedGroup {
+    id: string;
+    objectId: string;
+    name: string;
+    slug?: string | null;
+    importSource?: string | null;
+    categoryName: string;
+    feedSuspendedAt?: string | null;
+    primaryImageUrl?: string | null;
+}
+
+export interface ImportScheduleStatus {
+    enabled: boolean;
+    intervalMinutes: number;
+    runOnStartup: boolean;
+    catalogueBaseUrl?: string | null;
+    importInProgress: boolean;
+    lastScheduledRun?: {
+        id: string;
+        startedAt: string;
+        completedAt?: string | null;
+        status: string;
+        itemsStaged: number;
+        itemsUpdated: number;
+        orphaned: number;
+        errorMessage?: string | null;
+    } | null;
+}
+
+export interface ImportLogItem {
+    id: string;
+    source: string;
+    triggeredBy: string;
+    itemsStaged: number;
+    itemsUpdated: number;
+    itemsSkipped: number;
+    autoCategorized: number;
+    uncategorized: number;
+    orphaned: number;
+    reappeared: number;
+    warningCount: number;
+    status: string;
+    errorMessage?: string | null;
+    startedAt: string;
+    completedAt?: string | null;
+    durationMs: number;
+}
+
+export interface StagingVariant {
+    id: string;
+    sku: string;
+    color: string;
+    size: string;
+    price: number;
+    listPrice?: number | null;
+    description?: string | null;
+    brand?: string | null;
+    material?: string | null;
+    stock: number;
+    images: Array<{ id: string; url: string; altText?: string; isPrimary: boolean; sortOrder: number }>;
+}
+
+// ========== Staging Service ==========
+export const stagingService = {
+    getAll: (page: number = 1, options?: { status?: string; uncategorizedOnly?: boolean; incompleteOnly?: boolean }) => {
+        const params = new URLSearchParams({ page: String(page) });
+        if (options?.status) params.set('status', options.status);
+        if (options?.uncategorizedOnly) params.set('uncategorizedOnly', 'true');
+        if (options?.incompleteOnly) params.set('incompleteOnly', 'true');
+        return apiClient.get<PaginatedStagingResponse>(`/api/admin/staging?${params.toString()}`);
+    },
+    getCount: (status?: string) => {
+        const params = new URLSearchParams();
+        if (status) params.set('status', status);
+        return apiClient.get<{ count: number }>(`/api/admin/staging/count?${params.toString()}`);
+    },
+    getSummary: () => apiClient.get<StagingSummary>('/api/admin/staging/summary'),
+    assignCategory: (id: string, categoryId: string, saveMapping: boolean = true) =>
+        apiClient.put(`/api/admin/staging/${id}/category`, { categoryId, saveMapping }),
+    publish: (ids: string[]) =>
+        apiClient.post<{ published: string[]; blocked: Array<{ id: string; name: string; blockers: string[] }> }>(
+            '/api/admin/staging/publish', { ids }
+        ),
+    reject: (ids: string[]) =>
+        apiClient.post<{ rejected: string[] }>('/api/admin/staging/reject', { ids }),
+    restage: (ids: string[]) =>
+        apiClient.post<{ restaged: string[] }>('/api/admin/staging/restage', { ids }),
+    bulkAssignCategory: (ids: string[], categoryId: string, saveMappings: boolean = true) =>
+        apiClient.post('/api/admin/staging/bulk-assign-category', { ids, categoryId, saveMappings }),
+    runTestImport: () =>
+        apiClient.post<ImportResultData>('/api/admin/staging/import/test', {}),
+    runExternalImport: () =>
+        apiClient.post<ImportResultData>('/api/admin/staging/import/external', {}),
+    getImportHistory: (page: number = 1) =>
+        apiClient.get<{ items: ImportLogItem[]; page: number; pageSize: number; totalCount: number; totalPages: number }>(`/api/admin/staging/import/history?page=${page}`),
+    getImportSchedule: () =>
+        apiClient.get<ImportScheduleStatus>('/api/admin/staging/import/schedule'),
+    getFeedSuspended: (page: number = 1) =>
+        apiClient.get<{ items: FeedSuspendedGroup[]; page: number; pageSize: number; totalCount: number; totalPages: number }>(
+            `/api/admin/staging/feed-suspended?page=${page}`),
+    getGroupVariants: (groupId: string) =>
+        apiClient.get<StagingVariant[]>(`/api/admin/staging/${groupId}/variants`),
+    updateVariant: (variantId: string, data: {
+        price?: number; listPrice?: number; description?: string; brand?: string;
+        material?: string; color?: string; size?: string; stock?: number; imageUrls?: string[];
+    }) => apiClient.put(`/api/admin/staging/variants/${variantId}`, data),
+};
+
+// ========== Category Mappings Service ==========
+export const categoryMappingService = {
+    getAll: (page: number = 1) =>
+        apiClient.get<CategoryMappingItem[]>(`/api/admin/category-mappings?page=${page}`),
+    getCount: () =>
+        apiClient.get<{ count: number }>('/api/admin/category-mappings/count'),
+    create: (supplierTerm: string, subcategoryId: string, supplierSource?: string) =>
+        apiClient.post('/api/admin/category-mappings', { supplierTerm, subcategoryId, supplierSource }),
+    update: (id: number, subcategoryId: string, supplierTerm?: string) =>
+        apiClient.put(`/api/admin/category-mappings/${id}`, { subcategoryId, supplierTerm }),
+    delete: (id: number) =>
+        apiClient.delete(`/api/admin/category-mappings/${id}`),
+};
+
 // ========== OpenAI Service ==========
 export const openAIService = {
     summarizeReviews: (slug: string) =>

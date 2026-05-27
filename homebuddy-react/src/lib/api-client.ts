@@ -1,5 +1,6 @@
 // lib/api-client.ts
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
+import { getListPriceFromRow, saleDiscountPercent } from './pricing';
 
 /* =========================================================
    Shared Types (for storefront pages)
@@ -24,6 +25,8 @@ export type VariantListItem = {
   categorySlug?: string | null;
   subcategorySlug?: string | null;
   price: number;
+  /** When set above <code>price</code>, item is on sale (matches backend ListPrice). */
+  listPrice?: number | null;
   inStock: boolean;
   color?: string | null;
   size?: string | null;
@@ -44,6 +47,8 @@ export type GroupedProductCard = {
   anyInStock: boolean;
   /** convenient variant to deep-link via ?sku=... */
   sampleSku?: string;
+  /** Highest discount % among variants in the group (for sale ribbon). */
+  maxDiscountPercent?: number;
 };
 
 export interface GroupDetail {
@@ -134,6 +139,7 @@ export interface VariantDetail {
   color: string;
   size: string;
   price: number;
+  listPrice?: number | null;
   inStock: boolean;
   primaryImageUrl: string;
   images: string[]; // We will flatten this to strings immediately
@@ -625,12 +631,14 @@ export async function fetchGroupDetail(slugOrId: string, sku?: string): Promise<
         galleryImages.push(raw.heroImageUrl);
       }
 
+      const lp = getListPriceFromRow(v as Record<string, unknown>);
       return {
         id: v.sku, // Use SKU as ID if ID is missing
         sku: v.sku,
         color: v.color,
         size: v.size,
-        price: v.price,
+        price: typeof v.price === 'number' ? v.price : Number(v.price),
+        listPrice: lp,
         inStock: v.inStock,
         primaryImageUrl: v.primaryImageUrl,
         images: galleryImages, 
@@ -649,7 +657,8 @@ export async function fetchGroupDetail(slugOrId: string, sku?: string): Promise<
 
 /** Group variant rows (listing) into product cards for category grids */
 export function groupVariantsToProducts(rows: VariantListItem[]): GroupedProductCard[] {
-  const map = new Map<string, GroupedProductCard & { _min: number; _max: number }>();
+  type AccRow = GroupedProductCard & { _min: number; _max: number; _maxDiscountPct: number };
+  const map = new Map<string, AccRow>();
 
   for (const r of rows) {
     // Use slug (from backend) OR groupSlug OR objectId
@@ -660,6 +669,9 @@ export function groupVariantsToProducts(rows: VariantListItem[]): GroupedProduct
       continue;
     }
     
+    const rowList = getListPriceFromRow(r as unknown as Record<string, unknown>);
+    const rowPct = saleDiscountPercent(Number(r.price), rowList ?? r.listPrice);
+
     if (!map.has(key)) {
       map.set(key, {
         groupId: r.objectId ?? null,           // objectId as groupId
@@ -673,6 +685,7 @@ export function groupVariantsToProducts(rows: VariantListItem[]): GroupedProduct
         sampleSku: r.sku,
         _min: r.price,
         _max: r.price,
+        _maxDiscountPct: rowPct ?? 0,
       });
     } else {
       const g = map.get(key)!;
@@ -680,6 +693,9 @@ export function groupVariantsToProducts(rows: VariantListItem[]): GroupedProduct
       g.anyInStock = g.anyInStock || !!r.inStock;
       g._min = Math.min(g._min, r.price);
       g._max = Math.max(g._max, r.price);
+      if (rowPct != null && rowPct > g._maxDiscountPct) {
+        g._maxDiscountPct = rowPct;
+      }
       // Prefer a primary image if missing
       if (!g.primaryImageUrl && r.primaryImageUrl) g.primaryImageUrl = r.primaryImageUrl;
       // Prefer an in-stock sample sku if possible
@@ -690,15 +706,10 @@ export function groupVariantsToProducts(rows: VariantListItem[]): GroupedProduct
     }
   }
 
-  return Array.from(map.values()).map((g) => ({
-    groupId: g.groupId,
-    groupSlug: g.groupSlug,
-    groupName: g.groupName,
-    primaryImageUrl: g.primaryImageUrl,
-    minPrice: g._min,
-    maxPrice: g._max,
-    totalVariants: g.totalVariants,
-    anyInStock: g.anyInStock,
-    sampleSku: g.sampleSku,
+  return Array.from(map.values()).map(({ _min: minP, _max: maxP, _maxDiscountPct: dmax, ...g }) => ({
+    ...g,
+    minPrice: minP,
+    maxPrice: maxP,
+    ...(dmax > 0 ? { maxDiscountPercent: dmax } : {}),
   }));
 }

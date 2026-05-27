@@ -1,8 +1,8 @@
-// HomePage.tsx - Product-store focused homepage with side-scrollable category rows
+// HomePage.tsx - Product-store focused homepage layout
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import SplitText from "./SplitText";
 import AnimatedContent from "./AnimatedContent";
@@ -10,7 +10,7 @@ import ProductCard from "./ProductCard";
 import { fetchCategories, fetchCategoryListing, fetchDealsListing, groupVariantsToProducts } from "@/lib/api-client";
 import type { VariantListItem } from "@/lib/api-client";
 import type { GroupedProductCard } from "@/lib/shop-types";
-import { ArrowRight, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, Sparkles, ChevronLeft, ChevronRight, ChevronDown, LayoutGrid, CornerDownRight } from "lucide-react";
 
 type MixedProductItem = {
   product: GroupedProductCard;
@@ -70,6 +70,94 @@ function getDailyRecommendedProduct(items: MixedProductItem[]): DailyRecommendat
 const PRODUCTS_PER_SUBCATEGORY = 8;
 const MIXED_ROW_LIMIT = 36;
 const DEALS_ROW_LIMIT = 24;
+
+/** Homepage product grids: 4 columns, max 16 cells; slot 6 (index 5) is "See all products". */
+const HOME_PRODUCT_GRID_COLS = 4;
+const HOME_PRODUCT_GRID_MAX_SLOTS = 16;
+const HOME_PRODUCT_GRID_CTA_INDEX = 5;
+const HOME_PRODUCT_GRID_MAX_PRODUCTS = 15;
+
+type HomeProductGridSlot =
+  | { kind: "product"; item: MixedProductItem; slot: number }
+  | { kind: "cta"; slot: number }
+  | { kind: "empty"; slot: number };
+
+function buildHomeProductGridSlots(items: MixedProductItem[]): HomeProductGridSlot[] {
+  const products = items.slice(0, HOME_PRODUCT_GRID_MAX_PRODUCTS);
+  const slots: HomeProductGridSlot[] = [];
+  let pi = 0;
+  for (let slot = 0; slot < HOME_PRODUCT_GRID_MAX_SLOTS; slot += 1) {
+    if (slot === HOME_PRODUCT_GRID_CTA_INDEX) {
+      slots.push({ kind: "cta", slot });
+      continue;
+    }
+    if (pi < products.length) {
+      slots.push({ kind: "product", item: products[pi], slot });
+      pi += 1;
+    } else {
+      slots.push({ kind: "empty", slot });
+    }
+  }
+  return slots;
+}
+
+function SeeAllProductsCard({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex h-full min-h-[140px] w-full flex-col items-center justify-center rounded-md border-2 p-4 text-center transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+      style={{ backgroundColor: "#FFF8F3", borderColor: "#F4A261", color: "#2D3E50" }}
+    >
+      <span className="text-xs font-black uppercase tracking-wider" style={{ color: "#F4A261" }}>
+        {label}
+      </span>
+      <ArrowRight className="mt-2 h-5 w-5 shrink-0" style={{ color: "#2D3E50" }} aria-hidden />
+    </Link>
+  );
+}
+
+function HomeProductCardGrid({
+  items,
+  ctaHref = "/shop",
+  ctaLabel = "See all products",
+}: {
+  items: MixedProductItem[];
+  ctaHref?: string;
+  ctaLabel?: string;
+}) {
+  const slots = buildHomeProductGridSlots(items);
+  return (
+    <div
+      className="grid w-full gap-2 sm:gap-3 justify-items-stretch"
+      style={{ gridTemplateColumns: `repeat(${HOME_PRODUCT_GRID_COLS}, minmax(0, 1fr))` }}
+    >
+      {slots.map((cell) => {
+        if (cell.kind === "cta") {
+          return (
+            <div key="home-grid-cta" className="min-w-0 h-full flex">
+              <SeeAllProductsCard href={ctaHref} label={ctaLabel} />
+            </div>
+          );
+        }
+        if (cell.kind === "empty") {
+          return <div key={`home-grid-empty-${cell.slot}`} className="min-w-0" aria-hidden />;
+        }
+        const { item } = cell;
+        const stableKey = String(item.product.groupSlug || item.product.groupId || cell.slot);
+        return (
+          <div key={`${stableKey}-${cell.slot}`} className="min-w-0 h-full">
+            <ProductCard
+              product={item.product}
+              categorySlug={item.categorySlug}
+              subcategorySlug={item.subcategorySlug}
+              compact
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 const TESTIMONIALS = [
   { stars: 5, quote: "Best home improvement store in the area! Staff is incredibly knowledgeable.", name: "Sarah M.", loc: "San Francisco, CA" },
@@ -172,191 +260,11 @@ function PromoBanner({
   );
 }
 
-function HorizontalDragScroller({
-  children,
-  ariaLabel,
-}: {
-  children: React.ReactNode;
-  ariaLabel: string;
-}) {
-  const viewportRef = useRef<HTMLDivElement | null>(null);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(false);
-  const justDraggedRef = useRef(false);
-  const drag = useRef({
-    active: false,
-    startX: 0,
-    startScrollLeft: 0,
-    moved: false,
-    pointerId: -1,
-    pointerType: "mouse" as string,
-    captured: false,
-  });
-
-  const updateEdges = () => {
-    const el = viewportRef.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    const left = el.scrollLeft;
-    setCanLeft(left > 2);
-    setCanRight(left < max - 2);
-  };
-
-  useEffect(() => {
-    updateEdges();
-    const el = viewportRef.current;
-    if (!el) return;
-    const onScroll = () => updateEdges();
-    const onResize = () => updateEdges();
-    el.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
-    };
-  }, []);
-
-  const scrollByCards = (dir: -1 | 1) => {
-    const el = viewportRef.current;
-    if (!el) return;
-    const amount = Math.max(240, Math.floor(el.clientWidth * 0.8));
-    el.scrollBy({ left: dir * amount, behavior: "smooth" });
-  };
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    const el = viewportRef.current;
-    if (!el) return;
-    drag.current.active = true;
-    drag.current.pointerId = e.pointerId;
-    drag.current.startX = e.clientX;
-    drag.current.startScrollLeft = el.scrollLeft;
-    drag.current.moved = false;
-    drag.current.pointerType = (e.pointerType || "mouse") as string;
-    drag.current.captured = false;
-    justDraggedRef.current = false;
-  };
-
-  const onPointerMove = (e: React.PointerEvent) => {
-    const el = viewportRef.current;
-    if (!el) return;
-    if (!drag.current.active) return;
-    const dx = e.clientX - drag.current.startX;
-    const threshold = drag.current.pointerType === "touch" ? 10 : 6;
-
-    // Don't scroll at all until we're confidently dragging.
-    if (!drag.current.moved) {
-      if (Math.abs(dx) <= threshold) return;
-      drag.current.moved = true;
-      // Capture pointer only once we know it's a drag; otherwise taps never reach links.
-      try {
-        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-        drag.current.captured = true;
-      } catch {
-        // ignore
-      }
-    }
-
-    el.scrollLeft = drag.current.startScrollLeft - dx;
-  };
-
-  const onPointerUpOrCancel = (e: React.PointerEvent) => {
-    if (!drag.current.active) return;
-    drag.current.active = false;
-    if (drag.current.moved) {
-      // Prevent the "pointerup -> click" that follows a drag (especially on mobile).
-      justDraggedRef.current = true;
-      window.setTimeout(() => {
-        justDraggedRef.current = false;
-      }, 350);
-    }
-    try {
-      if (drag.current.captured) {
-        (e.currentTarget as HTMLElement).releasePointerCapture(drag.current.pointerId);
-      }
-    } catch {
-      // ignore
-    }
-    // Reset moved so future taps are clickable.
-    drag.current.moved = false;
-    drag.current.captured = false;
-  };
-
-  const onClickCapture = (e: React.MouseEvent) => {
-    // If user dragged, cancel link/button activation inside the scroller.
-    if (justDraggedRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  };
-
-  return (
-    <div className="relative">
-      {/* Fade edges */}
-      {canLeft && (
-        <div
-          className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 sm:w-14"
-          style={{ background: "linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%)" }}
-          aria-hidden="true"
-        />
-      )}
-      {canRight && (
-        <div
-          className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 sm:w-14"
-          style={{ background: "linear-gradient(270deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%)" }}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Arrow buttons */}
-      {canLeft && (
-        <button
-          type="button"
-          aria-label="Scroll left"
-          onClick={() => scrollByCards(-1)}
-          className="absolute left-1 top-1/2 -translate-y-1/2 z-10 hidden sm:inline-flex items-center justify-center w-9 h-9 rounded-full border-2 shadow-md bg-white/90 backdrop-blur transition-colors"
-          style={{ borderColor: "#E8DCC4", color: "#2D3E50" }}
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-      )}
-      {canRight && (
-        <button
-          type="button"
-          aria-label="Scroll right"
-          onClick={() => scrollByCards(1)}
-          className="absolute right-1 top-1/2 -translate-y-1/2 z-10 hidden sm:inline-flex items-center justify-center w-9 h-9 rounded-full border-2 shadow-md bg-white/90 backdrop-blur transition-colors"
-          style={{ borderColor: "#E8DCC4", color: "#2D3E50" }}
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      )}
-
-      <div
-        ref={viewportRef}
-        className="flex gap-2 sm:gap-3 overflow-x-auto overflow-y-hidden pb-1 scroll-smooth scrollbar-thin min-h-0 flex-1 max-h-full select-none"
-        style={{
-          scrollbarWidth: "thin",
-          WebkitOverflowScrolling: "touch",
-          cursor: drag.current.active ? "grabbing" : "grab",
-          touchAction: "pan-y", // allow vertical page scroll; horizontal handled by us
-        }}
-        role="region"
-        aria-label={ariaLabel}
-        onClickCapture={onClickCapture}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUpOrCancel}
-        onPointerCancel={onPointerUpOrCancel}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
 export default function HomePage() {
   const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
+  const subcategoriesSectionId = "homepage-subcategories-panel";
+  const [subcategoriesOpen, setSubcategoriesOpen] = useState(false);
   const [mixedProducts, setMixedProducts] = useState<MixedProductItem[]>([]);
   const [subcategoryTiles, setSubcategoryTiles] = useState<SubcategoryTile[]>([]);
   const [saleProducts, setSaleProducts] = useState<MixedProductItem[]>([]);
@@ -432,7 +340,6 @@ export default function HomePage() {
             mixedPool.map((item) => [item.product.groupSlug || item.product.groupId || item.product.groupName, item])
           ).values()
         );
-        const shuffledMixed = seededShuffle(dedupedMixed, `home-mixed-${dailySeed}`).slice(0, MIXED_ROW_LIMIT);
 
         const dealsResult = await fetchDealsListing({
           page: "1",
@@ -458,6 +365,21 @@ export default function HomePage() {
             };
           })
           .filter((i) => i.categorySlug && i.subcategorySlug);
+
+        const saleKeys = new Set(
+          normalizedSales.map((i) =>
+            String(i.product.groupSlug || i.product.groupId || i.product.groupName || "")
+          ).filter(Boolean)
+        );
+
+        const exploreOnly = dedupedMixed.filter((item) => {
+          const k = String(item.product.groupSlug || item.product.groupId || item.product.groupName || "");
+          if (saleKeys.has(k)) return false;
+          const pct = item.product.maxDiscountPercent;
+          if (typeof pct === "number" && pct > 0) return false;
+          return true;
+        });
+        const shuffledMixed = seededShuffle(exploreOnly, `home-mixed-${dailySeed}`).slice(0, MIXED_ROW_LIMIT);
 
         setSubcategoryTiles(tiles);
         setMixedProducts(shuffledMixed);
@@ -588,6 +510,7 @@ export default function HomePage() {
                       product={dailyRecommendation.product}
                       categorySlug={dailyRecommendation.categorySlug}
                       subcategorySlug={dailyRecommendation.subcategorySlug}
+                      detailsSlideUpOverlay
                     />
                   ) : (
                     <div className="w-full h-full grid place-items-center text-xs" style={{ color: "#8B9CAE" }}>
@@ -601,19 +524,87 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Top catalogue banner under hero */}
-      <section className="px-6 py-6" style={{ backgroundColor: "#FAF3E0" }}>
+      {/* Section A: Subcategory quick navigation (collapsed by default) */}
+      <section className="px-6 py-6" style={{ backgroundColor: "#FFFFFF" }}>
         <div className="max-w-7xl mx-auto">
-          <PromoBanner
-            href="/shop"
-            imageSrc="/Top_Banner.png"
-            imageAlt="Top banner linking to full catalogue"
-            dropdownText="View full catalogue"
-          />
+          <div className="rounded-xl border-2 overflow-hidden" style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}>
+            <button
+              type="button"
+              id="homepage-subcategories-toggle"
+              aria-expanded={subcategoriesOpen}
+              aria-controls={subcategoriesSectionId}
+              onClick={() => setSubcategoriesOpen((open) => !open)}
+              className="w-full flex items-center gap-3 sm:gap-4 px-4 py-3 sm:px-5 sm:py-4 text-left transition-colors hover:bg-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4A261] focus-visible:ring-offset-2"
+            >
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 bg-white shadow-sm"
+                style={{ borderColor: "#E8DCC4", color: "#F4A261" }}
+                aria-hidden
+              >
+                <LayoutGrid className="h-5 w-5" strokeWidth={2.25} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-lg sm:text-xl md:text-2xl font-black leading-tight" style={{ color: "#2D3E50" }}>
+                  Subcategories
+                </span>
+                <span
+                  className={`mt-0.5 block text-xs sm:text-sm transition-opacity duration-300 ${subcategoriesOpen ? "opacity-100" : "opacity-75 line-clamp-1 sm:line-clamp-none"}`}
+                  style={{ color: "#5A6C7D" }}
+                >
+                  Jump straight into a subcategory.
+                </span>
+              </span>
+              <CornerDownRight
+                className="hidden md:block shrink-0 h-6 w-6 -rotate-12 opacity-80"
+                style={{ color: "#F4A261" }}
+                strokeWidth={2}
+                aria-hidden
+              />
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 bg-white transition-transform duration-300 ease-out" style={{ borderColor: "#E8DCC4", color: "#2D3E50" }}>
+                <ChevronDown className={`h-5 w-5 transition-transform duration-300 ease-out ${subcategoriesOpen ? "-rotate-180" : ""}`} aria-hidden />
+              </span>
+            </button>
+            <div
+              className={`grid transition-[grid-template-rows] duration-300 ease-in-out motion-reduce:transition-none ${subcategoriesOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+              id={subcategoriesSectionId}
+              role="region"
+              aria-labelledby="homepage-subcategories-toggle"
+            >
+              <div
+                className="min-h-0 overflow-hidden border-t-2"
+                style={{ borderColor: "#E8DCC4" }}
+                {...(!subcategoriesOpen ? { inert: true } : {})}
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 p-4 sm:p-5 bg-white">
+                  {subcategoryTiles.map((tile) => (
+                    <Link
+                      key={tile.id}
+                      href={`/shop/${encodeURIComponent(tile.parentSlug)}/${encodeURIComponent(tile.slug)}`}
+                      className="rounded-xl border-2 p-3 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+                      style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}
+                    >
+                      <div className="h-16 w-full grid place-items-center mb-2">
+                        {tile.imageUrl ? (
+                          <img src={tile.imageUrl} alt={tile.name} className="h-14 w-14 object-cover rounded-lg" loading="lazy" />
+                        ) : (
+                          <div className="h-14 w-14 rounded-lg grid place-items-center" style={{ backgroundColor: "#F5ECD4", color: "#8B9CAE" }}>
+                            <span className="text-xl">📦</span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm text-center font-semibold leading-tight" style={{ color: "#2D3E50" }}>
+                        {tile.name}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Section A: Mixed product discovery row */}
+      {/* Section B: Mixed product discovery row */}
       <section
         className="px-6 pt-4 pb-6 box-border"
         style={{
@@ -634,98 +625,60 @@ export default function HomePage() {
           </AnimatedContent>
 
           {sectionsLoading ? (
-            <div className="flex gap-2 sm:gap-3 overflow-hidden">
-              {[1, 2, 3, 4, 5, 6].map((j) => (
-                <div
-                  key={j}
-                  className="flex-shrink-0 w-[96px] sm:w-[108px] md:w-[120px] lg:w-[132px] xl:w-[144px] rounded-lg border-2 overflow-hidden animate-pulse"
-                  style={{ borderColor: "#E8DCC4", backgroundColor: "#F5ECD4" }}
-                >
-                  <div className="aspect-square bg-white/50" />
-                  <div className="p-2 space-y-1">
-                    <div className="h-3 w-3/4 rounded" style={{ backgroundColor: "#E8DCC4" }} />
-                    <div className="h-4 w-1/3 rounded" style={{ backgroundColor: "#E8DCC4" }} />
+            <div
+              className="grid w-full gap-2 sm:gap-3 justify-items-stretch"
+              style={{ gridTemplateColumns: `repeat(${HOME_PRODUCT_GRID_COLS}, minmax(0, 1fr))` }}
+            >
+              {Array.from({ length: HOME_PRODUCT_GRID_MAX_SLOTS }, (_, slot) =>
+                slot === HOME_PRODUCT_GRID_CTA_INDEX ? (
+                  <div
+                    key={`explore-sk-cta-${slot}`}
+                    className="min-w-0 rounded-md border-2 animate-pulse"
+                    style={{ borderColor: "#F4D4A8", backgroundColor: "#FFF8F3", minHeight: 140 }}
+                  />
+                ) : (
+                  <div
+                    key={`explore-sk-${slot}`}
+                    className="min-w-0 rounded-md border-2 overflow-hidden animate-pulse"
+                    style={{ borderColor: "#E8DCC4", backgroundColor: "#F5ECD4" }}
+                  >
+                    <div className="aspect-square bg-white/50" />
+                    <div className="p-2 space-y-1">
+                      <div className="h-3 w-3/4 rounded" style={{ backgroundColor: "#E8DCC4" }} />
+                      <div className="h-4 w-1/3 rounded" style={{ backgroundColor: "#E8DCC4" }} />
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
+            </div>
+          ) : mixedProducts.length === 0 ? (
+            <div
+              className="rounded-lg border-2 p-6 text-center w-full"
+              style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}
+            >
+              <p className="text-sm" style={{ color: "#5A6C7D" }}>
+                No products available yet.
+              </p>
             </div>
           ) : (
-            <HorizontalDragScroller ariaLabel="Mixed products from all subcategories">
-              {mixedProducts.length === 0 ? (
-                <div
-                  className="min-w-[220px] rounded-lg border-2 p-4 text-center shrink-0"
-                  style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}
-                >
-                  <p className="text-sm" style={{ color: "#5A6C7D" }}>No products available yet.</p>
-                </div>
-              ) : (
-                mixedProducts.map((item, cardIndex) => (
-                  <div
-                    key={item.product.groupSlug || item.product.groupId || cardIndex}
-                    className="flex-shrink-0 w-[96px] sm:w-[108px] md:w-[120px] lg:w-[132px] xl:w-[144px]"
-                  >
-                    <ProductCard
-                      product={item.product}
-                      categorySlug={item.categorySlug}
-                      subcategorySlug={item.subcategorySlug}
-                      compact
-                    />
-                  </div>
-                ))
-              )}
-            </HorizontalDragScroller>
+            <HomeProductCardGrid items={mixedProducts} />
           )}
         </div>
       </section>
 
-      {/* Section B: Subcategory quick navigation */}
-      <section className="px-6 py-6" style={{ backgroundColor: "#FFFFFF" }}>
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-lg sm:text-xl md:text-2xl font-black mb-0.5" style={{ color: "#2D3E50" }}>
-            Underkategorier
-          </h2>
-          <p className="text-xs sm:text-sm mb-4" style={{ color: "#5A6C7D" }}>
-            Jump straight into a subcategory.
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {subcategoryTiles.map((tile) => (
-              <Link
-                key={tile.id}
-                href={`/shop/${encodeURIComponent(tile.parentSlug)}/${encodeURIComponent(tile.slug)}`}
-                className="rounded-xl border-2 p-3 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
-                style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}
-              >
-                <div className="h-16 w-full grid place-items-center mb-2">
-                  {tile.imageUrl ? (
-                    <img src={tile.imageUrl} alt={tile.name} className="h-14 w-14 object-cover rounded-lg" loading="lazy" />
-                  ) : (
-                    <div className="h-14 w-14 rounded-lg grid place-items-center" style={{ backgroundColor: "#F5ECD4", color: "#8B9CAE" }}>
-                      <span className="text-xl">📦</span>
-                    </div>
-                  )}
-                </div>
-                <p className="text-sm text-center font-semibold leading-tight" style={{ color: "#2D3E50" }}>
-                  {tile.name}
-                </p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Sales banner under subcategories */}
-      <section className="px-6 py-6" style={{ backgroundColor: "#FFFFFF" }}>
+      {/* Catalogue banner (links to shop) below Explore Products */}
+      <section className="px-6 py-6" style={{ backgroundColor: "#FAF3E0" }}>
         <div className="max-w-7xl mx-auto">
           <PromoBanner
-            href="/shop?sort=discount_desc"
-            imageSrc="/Sales_Banner.png"
-            imageAlt="Sales banner linking to items on sale"
-            dropdownText="View items on sale"
+            href="/shop"
+            imageSrc="/Top_Banner.png"
+            imageAlt="Top banner linking to full catalogue"
+            dropdownText="View full catalogue"
           />
         </div>
       </section>
 
-      {/* Section C: On-sale products row */}
+      {/* Section C: On-sale products row (between catalogue banner and sales image banner) */}
       <section className="px-6 pt-2 pb-10" style={{ backgroundColor: "#FFFFFF" }}>
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-2 mb-3">
@@ -737,30 +690,30 @@ export default function HomePage() {
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
-          <HorizontalDragScroller ariaLabel="Products currently on sale">
-            {saleProducts.length === 0 ? (
-              <div
-                className="min-w-[220px] rounded-lg border-2 p-4 text-center shrink-0"
-                style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}
-              >
-                <p className="text-sm" style={{ color: "#5A6C7D" }}>No discounted products right now.</p>
-              </div>
-            ) : (
-              saleProducts.map((item, cardIndex) => (
-                <div
-                  key={item.product.groupSlug || item.product.groupId || cardIndex}
-                  className="flex-shrink-0 w-[96px] sm:w-[108px] md:w-[120px] lg:w-[132px] xl:w-[144px]"
-                >
-                  <ProductCard
-                    product={item.product}
-                    categorySlug={item.categorySlug}
-                    subcategorySlug={item.subcategorySlug}
-                    compact
-                  />
-                </div>
-              ))
-            )}
-          </HorizontalDragScroller>
+          {saleProducts.length === 0 ? (
+            <div
+              className="rounded-lg border-2 p-6 text-center w-full"
+              style={{ borderColor: "#E8DCC4", backgroundColor: "#FAF3E0" }}
+            >
+              <p className="text-sm" style={{ color: "#5A6C7D" }}>
+                No discounted products right now.
+              </p>
+            </div>
+          ) : (
+            <HomeProductCardGrid items={saleProducts} ctaHref="/deals" ctaLabel="See all on sale" />
+          )}
+        </div>
+      </section>
+
+      {/* Sales image banner */}
+      <section className="px-6 py-6" style={{ backgroundColor: "#FFFFFF" }}>
+        <div className="max-w-7xl mx-auto">
+          <PromoBanner
+            href="/deals"
+            imageSrc="/Sales_Banner.png"
+            imageAlt="Sales banner linking to deals"
+            dropdownText="View items on sale"
+          />
         </div>
       </section>
 
